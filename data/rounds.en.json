@@ -55,6 +55,7 @@
             "{{DYING}} attempted to tackle their opponent but slipped and hit their head, ending the games in a very anticlimactic way.",
             "{{DYING}} decided to honorably end their own life and let {{LIVING}} win."
         ],
+        "survivors": 1,
         "id": "squid-game"
     }
 ]

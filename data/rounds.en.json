@@ -1,0 +1,60 @@
+[
+    {
+        "name": "Round 1: Red Light, Green Light.",
+        "intro": "♫ Mugunghwa Kkoci Pieot Seumnida ( 무궁화 꽃 이 피었 습니다 ) ♫",
+        "deaths": [
+            "%v saw Winter's vampiric build and took an extra step backwards.",
+            "After stopping, Coffee's coffee spilled on %v, who jumped and was slaughtered midair."
+        ],
+        "id": "red-light-green-light"
+    },
+    {
+        "name": "Round 2: Sugar Honeycombs",
+        "intro": "The shape you have chosen is the shape you must remove from the honeycomb.",
+        "deaths": [
+            "%v was given the shape of Uggs and died on the bottom Ugg",
+            "With sweaty hands, %v died after chipping off Saerebrum's first tentacle"
+        ],
+        "survivors": 40,
+        "id": "sugar-honeycomb"
+    },
+    {
+        "name": "Round 3: Tug of War",
+        "intro": "Form teams of ten players.",
+        "deaths": [
+            "Team %v tried to reforge their stamina to health but should have put some points in strength instead.",
+            "Instead of picking triple extort builds, team %v went all DPS and paid the ultimate price."
+        ],
+        "survivors": 40,
+        "id": "tug-of-war"
+    },
+    {
+        "name": "Round 4: Marbles",
+        "intro": "Using your set of ten marbles, play the game of your choice with your partner. The player who manages to take all ten marbles from their partner wins.",
+        "deaths": [
+            "Juniper's scream stunned %v, and they were eliminated after Juniper casually scooped up all the marbles",
+            "%v partnered with JoeBu, who secretly deployed many Flunders to deflect all the marbles into their own pouch"
+        ],
+        "survivors": 16,
+        "id": "marbles"
+    },
+    {
+        "name": "Round 5: Glass Stepping Stones",
+        "intro": "Choose a jacket with a number from 1 to 16.",
+        "deaths": [
+            "%v tried to jump across five steps in one go, landed on tempered glass, but still fell through due to the weight of their tank build.",
+            "%v couldn't handle the pressure and jumped outside the playing area"
+        ],
+        "survivors": 2,
+        "id": "glass-stepping-stones"
+    },
+    {
+        "name": "Final Round: Squid Game",
+        "intro": "Any kind of combat or violence is allowed in Squid Game.",
+        "deaths": [
+            "%v attempted to tackle their opponent but slipped and hit their head, ending the games in a very anticlimactic way.",
+            "%v decided to honorably end their own life and let their opponent win."
+        ],
+        "id": "squid-game"
+    }
+]

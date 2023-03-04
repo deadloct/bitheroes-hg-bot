@@ -1,0 +1,7 @@
+.env
+.git
+.vsode
+__debug_bin
+bin
+bitheroes-squid-game
+k8s/secret.yaml

@@ -9,6 +9,7 @@ and the officiating player should give them a friend spot.
 ## Adding New Deaths to the Game
 
 This bot reads the file `data/rounds.en.json` at startup. Deaths in this file should
-use the generic Golang replacement string `%v` to represent the dying player's name.
-Future versions will hopefully support multiple players or multiple mentions of
-one player per string, but for now only one mention of the dying player is supported.
+can use the following tokens:
+
+* `{{DYING}}`: The player or team (such as in tug of war) that is dying.
+* `{{LIVING}}`: A random player or team that has not died yet.

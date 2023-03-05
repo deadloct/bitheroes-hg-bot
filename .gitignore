@@ -2,5 +2,5 @@
 .vscode
 __debug_bin
 bin
-bitheroes-guide-bot
+discord-guide-bot
 k8s/secret.yaml

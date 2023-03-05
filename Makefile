@@ -2,7 +2,7 @@ ifneq ("$(wildcard .env)", "")
 	include .env
 endif
 
-NAME := bitheroes-squid-game
+NAME := discord-squid-game
 LOCAL_PATH := bin
 
 clean:
@@ -27,7 +27,7 @@ docker_build:
 	docker build -t $(IMAGE_URL) .
 
 docker_run: docker_build
-	docker run -e "BITHEROES_SQUID_GAME_AUTH_TOKEN=$(BITHEROES_SQUID_GAME_AUTH_TOKEN)" $(IMAGE_URL)
+	docker run -e "DISCORD_SQUID_GAME_AUTH_TOKEN=$(DISCORD_SQUID_GAME_AUTH_TOKEN)" $(IMAGE_URL)
 
 docker_push: docker_build
 	docker push $(IMAGE_URL)

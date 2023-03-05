@@ -26,6 +26,8 @@ const (
 	DataLocation = "data"
 	PhrasesFile  = "phrases.en.json"
 	IntroFile    = "intro.template"
+
+	DiscordMaxMessageLength = 2000
 )
 
 var (

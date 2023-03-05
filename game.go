@@ -82,7 +82,7 @@ func (g *Game) launchGame(session *discordgo.Session, msg *discordgo.Message, st
 	}
 
 	// TODO: Remove this
-	for i := 1; i < 10; i++ {
+	for i := 1; i < 120; i++ {
 		users = append(users, &discordgo.User{
 			Username: fmt.Sprintf("%v-%v", users[0].Username, i),
 			ID:       users[0].ID,
@@ -125,11 +125,11 @@ func (g *Game) handleOutput(session *discordgo.Session, msg *discordgo.Message, 
 	for {
 		select {
 		case str := <-out:
-			log.Debugf("sending message '%v'...", str)
+			log.Debugf("sending message of length %v...", len(str))
 			if _, err := session.ChannelMessageSend(msg.ChannelID, str); err != nil {
-				log.Errorf("error sending message '%v': %v", str, err)
+				log.Errorf("error sending message of length %v: %v", len(str), err)
 			} else {
-				log.Debugf("message sent '%v'", str)
+				log.Debugf("message sent of length %v", len(str))
 			}
 		case <-stop:
 			return
@@ -231,11 +231,21 @@ func (g *Game) getRandomPhrase(dying *discordgo.User, alive []*discordgo.User) s
 	return result.String()
 }
 
-func (g *Game) send(output []string, out chan string) {
-	lines := []string{"---"}
-	for i := 0; i < len(output); i++ {
-		lines = append(lines, "> "+output[i])
+func (g *Game) send(lines []string, out chan string) {
+	output := "---"
+
+	for _, line := range lines {
+		next := fmt.Sprintf("\n> %v", line)
+
+		if len(output)+len(next) > DiscordMaxMessageLength {
+			out <- output
+			output = ""
+		}
+
+		output += next
 	}
 
-	out <- strings.Join(lines, "\n")
+	if len(output) > 0 {
+		out <- output
+	}
 }

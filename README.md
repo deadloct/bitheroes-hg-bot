@@ -9,8 +9,8 @@ players being eliminated until one is eventually victorious.
 
 ## Adding New Deaths to the Game
 
-The deaths are hardcoded in the `data/settings.en.json` file and can use the following
+The death phrases are imported from `data/phrases.en.json` file and can use the following
 tokens:
 
-* `{{DYING}}`: The player or team (such as in tug of war) that is dying.
-* `{{LIVING}}`: A random player or team that has not died yet.
+* `{{.Dying}}`: The player that is dying.
+* `{{.Killer}}`: A random living player that contributed to the dying player's death.

@@ -5,13 +5,12 @@ import (
 	"math/big"
 )
 
-// Source: https://stackoverflow.com/a/26153749
-func GetRandomInt(min, max int64) int64 {
-	bg := big.NewInt(max - min)
+func GetRandomInt(min, max int) (int, error) {
+	bg := big.NewInt(int64(max - min))
 	n, err := rand.Int(rand.Reader, bg)
 	if err != nil {
-		panic(err)
+		return 0, err
 	}
 
-	return n.Int64() + min
+	return int(n.Int64()) + min, nil
 }

@@ -15,24 +15,20 @@ func init() {
 	log.SetLevel(log.DebugLevel)
 }
 
-func messageHandler(settings *Settings) func(session *discordgo.Session, mc *discordgo.MessageCreate) {
-	return func(session *discordgo.Session, mc *discordgo.MessageCreate) {
-		// Ignore messages from the bot
-		if mc.Author.ID == session.State.User.ID {
-			return
-		}
-
-		log.Debugf("received message: %#v", mc.Message)
-
-		switch {
-		case strings.HasPrefix(mc.Content, CMD_HG):
-			NewGame(settings).Start(session, mc)
-		default:
-			session.ChannelMessageSend(mc.ChannelID, "Unknown command")
-		}
-
-		// ignore everything else
+func messageHandler(session *discordgo.Session, mc *discordgo.MessageCreate) {
+	// Ignore messages from the bot
+	if mc.Author.ID == session.State.User.ID {
+		return
 	}
+
+	switch {
+	case strings.HasPrefix(mc.Content, CMD_HG):
+		NewGame().Start(session, mc)
+	default:
+		session.ChannelMessageSend(mc.ChannelID, "Unknown command")
+	}
+
+	// ignore everything else
 }
 
 func main() {
@@ -41,14 +37,9 @@ func main() {
 		log.Panic(err)
 	}
 
-	modes, err := LoadJSONData()
-	if err != nil {
-		log.Panic(err)
-	}
-
 	// Listen for server messages only
 	session.Identify.Intents = discordgo.IntentGuildMessages | discordgo.IntentGuildMessageReactions | discordgo.IntentMessageContent
-	session.AddHandler(messageHandler(modes))
+	session.AddHandler(messageHandler)
 	if err := session.Open(); err != nil {
 		log.Panic(err)
 	}

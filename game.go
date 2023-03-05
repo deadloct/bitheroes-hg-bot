@@ -1,4 +1,4 @@
-package game
+package main
 
 import (
 	"bytes"
@@ -11,18 +11,8 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/deadloct/discord-squid-game/data"
-	"github.com/deadloct/discord-squid-game/game/stages"
 	log "github.com/sirupsen/logrus"
 )
-
-const (
-	DefaultStartDelay = 5 * time.Second
-	MinimumStartDelay = 30  // Seconds
-	MaximumStartDelay = 600 // 10 minutes in seconds
-)
-
-var DataLocation = path.Join(".", "data")
 
 type TemplateValues struct {
 	User  string
@@ -30,11 +20,11 @@ type TemplateValues struct {
 }
 
 type Game struct {
-	Mode *data.Mode
+	Settings *Settings
 }
 
-func NewGame(m *data.Mode) *Game {
-	return &Game{Mode: m}
+func NewGame(s *Settings) *Game {
+	return &Game{Settings: s}
 }
 
 func (g *Game) Start(session *discordgo.Session, mc *discordgo.MessageCreate) (chan struct{}, error) {
@@ -65,14 +55,14 @@ func (g *Game) Start(session *discordgo.Session, mc *discordgo.MessageCreate) (c
 }
 
 func (g *Game) getIntro(vals TemplateValues) (string, error) {
-	introPath := path.Join(DataLocation, g.Mode.IntroTemplate)
+	introPath := path.Join(SettingsLocation, g.Settings.IntroTemplate)
 	v, err := ioutil.ReadFile(introPath)
 	if err != nil {
 		return "", fmt.Errorf("unable to open file %s: %w", introPath, err)
 	}
 
 	tmplStr := string(v[:])
-	tmpl, err := template.New(g.Mode.IntroTemplate).Parse(tmplStr)
+	tmpl, err := template.New(g.Settings.IntroTemplate).Parse(tmplStr)
 	if err != nil {
 		return "", err
 	}
@@ -102,18 +92,12 @@ func (g *Game) delayedStart(delay time.Duration, session *discordgo.Session, msg
 }
 
 func (g *Game) startGame(session *discordgo.Session, msg *discordgo.Message, stop chan struct{}) {
-	users, err := session.MessageReactions(msg.ChannelID, msg.ID, "🦑", 100, "", "")
+	users, err := session.MessageReactions(msg.ChannelID, msg.ID, ParticipantEmoji, 100, "", "")
 	if err != nil {
 		log.Fatalf("could not retrieve reactions: %v", err)
 	}
 
-	for _, round := range g.Mode.Rounds {
-		switch round.ID {
-		case "red-light-green-light":
-			stage := stages.NewRedLightGreenLight()
-			users = stage.Run(session, msg, stop, users)
-		}
-	}
+	// game logic here
 
 	var mentions []string
 	for _, u := range users {

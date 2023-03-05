@@ -1,4 +1,4 @@
-module github.com/deadloct/discord-squid-game
+module github.com/deadloct/bitheroes-hg-bot
 
 go 1.18
 

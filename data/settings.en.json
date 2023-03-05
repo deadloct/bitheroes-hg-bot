@@ -1,0 +1,8 @@
+{
+    "intro": "intro.template",
+    "phrases": [
+        "{{DYING}} was obliterated by Winter's vampiric build.",
+        "[GG] teamed up on {{DYING}}.",
+        "{{DYING}} tried to climb a tree but slipped and fell directly on a cactus of deadly thorns."
+    ]
+}

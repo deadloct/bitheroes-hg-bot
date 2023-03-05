@@ -7,14 +7,7 @@ import (
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/deadloct/discord-squid-game/data"
-	"github.com/deadloct/discord-squid-game/game"
 	log "github.com/sirupsen/logrus"
-)
-
-const (
-	CMD_PREFIX = "!"
-	MODE_SQUID = "squid-game"
 )
 
 func init() {
@@ -22,12 +15,7 @@ func init() {
 	log.SetLevel(log.DebugLevel)
 }
 
-func messageHandler(modes []*data.Mode) func(session *discordgo.Session, mc *discordgo.MessageCreate) {
-	modeMap := make(map[string]*data.Mode)
-	for _, mode := range modes {
-		modeMap[mode.ID] = mode
-	}
-
+func messageHandler(settings *Settings) func(session *discordgo.Session, mc *discordgo.MessageCreate) {
 	return func(session *discordgo.Session, mc *discordgo.MessageCreate) {
 		// Ignore messages from the bot
 		if mc.Author.ID == session.State.User.ID {
@@ -37,8 +25,8 @@ func messageHandler(modes []*data.Mode) func(session *discordgo.Session, mc *dis
 		log.Debugf("received message: %#v", mc.Message)
 
 		switch {
-		case strings.HasPrefix(mc.Content, CMD_PREFIX+MODE_SQUID):
-			game.NewGame(modeMap[MODE_SQUID]).Start(session, mc)
+		case strings.HasPrefix(mc.Content, CMD_HG):
+			NewGame(settings).Start(session, mc)
 		default:
 			session.ChannelMessageSend(mc.ChannelID, "Unknown command")
 		}
@@ -48,12 +36,12 @@ func messageHandler(modes []*data.Mode) func(session *discordgo.Session, mc *dis
 }
 
 func main() {
-	session, err := discordgo.New("Bot " + os.Getenv("DISCORD_SQUID_GAME_AUTH_TOKEN"))
+	session, err := discordgo.New("Bot " + os.Getenv("BITHEROES_HG_BOT_AUTH_TOKEN"))
 	if err != nil {
 		log.Panic(err)
 	}
 
-	modes, err := data.LoadJSONData()
+	modes, err := LoadJSONData()
 	if err != nil {
 		log.Panic(err)
 	}

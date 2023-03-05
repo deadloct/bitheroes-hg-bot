@@ -7,6 +7,6 @@ RUN make build
 
 FROM golang:1.20-alpine
 WORKDIR /app
-COPY --from=base /app/bin/discord-squid-game discord-squid-game
+COPY --from=base /app/bin/bitheroes-hg-bot bitheroes-hg-bot
 COPY --from=base /app/bin/data data
-CMD ["/app/discord-squid-game"]
+CMD ["/app/bitheroes-hg-bot"]

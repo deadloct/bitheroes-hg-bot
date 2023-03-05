@@ -1,12 +1,6 @@
 
-```
-##########
-𝕊𝕢𝕦𝕚𝕕 𝔾𝕒𝕞𝕖
-##########
-
 [ 🔴 🔺 🟥 ]
 
-{{.User}} has sponsored a new Squid Game and you have received an invitation to join. To accept the invitation, react to this message with a :squid:.
+{{.User}} has sponsored a new **𝕊𝕢𝕦𝕚𝕕 𝔾𝕒𝕞𝕖** and you have received an invitation to join. To accept the invitation, react to this message with a :squid: within the next {{.Delay}}.
 
 Only one contestant will be victorious. Good luck to you.
-```

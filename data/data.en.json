@@ -6,13 +6,11 @@
         "intro-template": "squid-game-intro.template",
         "rounds": [
             {
-                "name": "Round 1: Red Light, Green Light.",
-                "intro": "♫ Mugunghwa Kkoci Pieot Seumnida ( 무궁화 꽃 이 피었 습니다 ) ♫",
+                "id": "red-light-green-light",
                 "deaths": [
                     "{{DYING}} saw Winter's vampiric build and took an extra step backwards.",
                     "After stopping, Coffee's coffee spilled on {{DYING}}, who jumped and was slaughtered midair."
-                ],
-                "id": "red-light-green-light"
+                ]
             },
             {
                 "name": "Round 2: Sugar Honeycombs",
@@ -21,7 +19,7 @@
                     "{{DYING}} was given the shape of Uggs and died on the bottom Ugg",
                     "With sweaty hands, {{DYING}} died after chipping off Saerebrum's first tentacle"
                 ],
-                "survivors": 40,
+                "survivors": 50,
                 "id": "sugar-honeycomb"
             },
             {

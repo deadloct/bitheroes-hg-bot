@@ -12,11 +12,12 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/deadloct/discord-squid-game/data"
+	"github.com/deadloct/discord-squid-game/game/stages"
 	log "github.com/sirupsen/logrus"
 )
 
 const (
-	DefaultStartDelay = 20 * time.Second
+	DefaultStartDelay = 5 * time.Second
 	MinimumStartDelay = 30  // Seconds
 	MaximumStartDelay = 600 // 10 minutes in seconds
 )
@@ -24,7 +25,8 @@ const (
 var DataLocation = path.Join(".", "data")
 
 type TemplateValues struct {
-	User string
+	User  string
+	Delay time.Duration
 }
 
 type Game struct {
@@ -36,21 +38,6 @@ func NewGame(m *data.Mode) *Game {
 }
 
 func (g *Game) Start(session *discordgo.Session, mc *discordgo.MessageCreate) (chan struct{}, error) {
-	vals := TemplateValues{
-		User: mc.Author.Username,
-	}
-
-	// This is the welcome messsage that people react to to enter.
-	intro, err := g.getIntro(vals)
-	if err != nil {
-		return nil, err
-	}
-
-	msg, err := session.ChannelMessageSend(mc.ChannelID, intro)
-	if err != nil {
-		return nil, err
-	}
-
 	// The start delay gives people time to react before the game starts
 	delay := DefaultStartDelay
 	parts := strings.Split(mc.Content, " ")
@@ -58,6 +45,20 @@ func (g *Game) Start(session *discordgo.Session, mc *discordgo.MessageCreate) (c
 		if num, err := strconv.Atoi(parts[1]); err == nil && num >= MinimumStartDelay && num <= MaximumStartDelay {
 			delay = time.Duration(num) * time.Second
 		}
+	}
+
+	// This is the welcome messsage that people react to to enter.
+	intro, err := g.getIntro(TemplateValues{
+		User:  mc.Author.Username,
+		Delay: delay,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	msg, err := session.ChannelMessageSend(mc.ChannelID, intro)
+	if err != nil {
+		return nil, err
 	}
 
 	return g.delayedStart(delay, session, msg), nil
@@ -106,13 +107,18 @@ func (g *Game) startGame(session *discordgo.Session, msg *discordgo.Message, sto
 		log.Fatalf("could not retrieve reactions: %v", err)
 	}
 
-	var userStrings []string
-	for _, u := range users {
-		userStrings = append(userStrings, fmt.Sprintf("%v#%v", u.Username, u.ID))
+	for _, round := range g.Mode.Rounds {
+		switch round.ID {
+		case "red-light-green-light":
+			stage := stages.NewRedLightGreenLight()
+			users = stage.Run(session, msg, stop, users)
+		}
 	}
 
-	_, err = session.ChannelMessageSend(msg.ChannelID, "Contestants: "+strings.Join(userStrings, ", "))
-	if err != nil {
-		log.Error(err)
+	var mentions []string
+	for _, u := range users {
+		mentions = append(mentions, fmt.Sprintf("<@%v>", u.ID))
 	}
+
+	session.ChannelMessageSend(msg.ChannelID, "Congrats to the winner(s): "+strings.Join(mentions, ", "))
 }

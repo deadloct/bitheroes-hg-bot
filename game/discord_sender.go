@@ -40,7 +40,7 @@ func (s *DiscordSender) listen() {
 	for {
 		select {
 		case str := <-s.sendCh:
-			s.session.ChannelMessageSend(s.channelID, str)
+			s.Send(str)
 		case <-s.stopCh:
 			return
 		}

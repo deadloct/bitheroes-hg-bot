@@ -13,14 +13,26 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type Game struct{}
+type Game struct {
+	author *discordgo.User
+	cmd    string
+	sender Sender
 
-func NewGame() *Game { return &Game{} }
+	introMessage *discordgo.Message
+	sendCh       chan string
+	session      *discordgo.Session
+}
 
-func (g *Game) Start(session *discordgo.Session, mc *discordgo.MessageCreate) (chan struct{}, error) {
+func NewGame(session *discordgo.Session, author *discordgo.User, cmd string, sender Sender) *Game {
+	return &Game{author: author, cmd: cmd, sender: sender, session: session}
+}
+
+func (g *Game) Start() (chan struct{}, error) {
+	g.sendCh = g.sender.Start()
+
 	// The start delay gives people time to react before the game starts
 	delay := settings.DefaultStartDelay
-	parts := strings.Split(mc.Content, " ")
+	parts := strings.Split(g.cmd, " ")
 	if len(parts) > 1 {
 		if num, err := strconv.Atoi(parts[1]); err == nil && num >= settings.MinimumStartDelay && num <= settings.MaximumStartDelay {
 			delay = time.Duration(num) * time.Second
@@ -29,20 +41,19 @@ func (g *Game) Start(session *discordgo.Session, mc *discordgo.MessageCreate) (c
 
 	// This is the welcome messsage that people react to to enter.
 	intro, err := g.getIntro(settings.IntroValues{
-		User:  mc.Author.Username,
+		User:  g.author.Username,
 		Delay: delay,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	log.Debugf("sending intro to channel %v: %v", mc.ChannelID, intro)
-	msg, err := session.ChannelMessageSend(mc.ChannelID, intro)
-	if err != nil {
+	log.Debug("sending intro")
+	if g.introMessage, err = g.sender.Send(intro); err != nil {
 		return nil, err
 	}
 
-	return g.delayedStart(delay, session, msg), nil
+	return g.delayedStart(delay), nil
 }
 
 func (g *Game) getIntro(vals settings.IntroValues) (string, error) {
@@ -54,7 +65,7 @@ func (g *Game) getIntro(vals settings.IntroValues) (string, error) {
 	return result.String(), nil
 }
 
-func (g *Game) delayedStart(delay time.Duration, session *discordgo.Session, msg *discordgo.Message) chan struct{} {
+func (g *Game) delayedStart(delay time.Duration) chan struct{} {
 	log.Debugf("delaying start by %v", delay)
 
 	stop := make(chan struct{})
@@ -63,28 +74,30 @@ func (g *Game) delayedStart(delay time.Duration, session *discordgo.Session, msg
 		case <-stop:
 			log.Info("game cancelled")
 		case <-time.After(delay):
-			g.launchGame(session, msg, stop)
+			g.run(stop)
 		}
 	}()
 
 	return stop
 }
 
-func (g *Game) launchGame(session *discordgo.Session, msg *discordgo.Message, stop chan struct{}) error {
+func (g *Game) run(stop chan struct{}) error {
 	log.Debug("starting game")
 
 	// TODO: only retrieves 100, need to get more somehow
-	users, err := session.MessageReactions(msg.ChannelID, msg.ID, settings.ParticipantEmoji, 100, "", "")
+	// TODO: don't directly access session to remove dependency and make testing easier
+	users, err := g.session.MessageReactions(g.introMessage.ChannelID, g.introMessage.ID,
+		settings.ParticipantEmoji, 100, "", "")
 	if err != nil {
 		log.Fatalf("could not retrieve reactions: %v", err)
 	}
 
 	if len(users) == 0 {
-		session.ChannelMessageSend(msg.ChannelID, "No users entered the contest")
+		g.sender.Send("No users entered the contest")
 		return nil
 	}
 
-	// TODO: Remove this
+	// TODO: Remove this testing code
 	for i := 1; i < 120; i++ {
 		users = append(users, &discordgo.User{
 			Username: fmt.Sprintf("%v-%v", users[0].Username, i),
@@ -93,9 +106,6 @@ func (g *Game) launchGame(session *discordgo.Session, msg *discordgo.Message, st
 	}
 
 	log.Debugf("tribute count: %v", len(users))
-
-	out := make(chan string)
-	go g.handleOutput(session, msg, out, stop)
 
 	for day := 0; len(users) > 1; day++ {
 		if day > 0 {
@@ -107,7 +117,7 @@ func (g *Game) launchGame(session *discordgo.Session, msg *discordgo.Message, st
 			log.Info("game cancelled")
 		default:
 			log.Debugf("simulating day %v with %v tributes", day, len(users))
-			users, err = g.simulateDay(day, users, out)
+			users, err = g.runDay(day, users)
 			if err != nil {
 				log.Errorf("failed to simulate day %v: %v", day, err)
 			}
@@ -122,28 +132,15 @@ func (g *Game) launchGame(session *discordgo.Session, msg *discordgo.Message, st
 	}
 
 	log.Debugf("winners: %v", mentions)
-	out <- "---\nThis year's Hunger Games have concluded.\nCongratulations to our new victor(s): " + strings.Join(mentions, ", ")
+	g.sendCh <- `---
+> This year's Hunger Games have concluded.
+> 
+> Congratulations to our new victor(s): ` + strings.Join(mentions, ", ")
 	close(stop)
 	return nil
 }
 
-func (g *Game) handleOutput(session *discordgo.Session, msg *discordgo.Message, out chan string, stop chan struct{}) {
-	for {
-		select {
-		case str := <-out:
-			log.Debugf("sending message of length %v...", len(str))
-			if _, err := session.ChannelMessageSend(msg.ChannelID, str); err != nil {
-				log.Errorf("error sending message of length %v: %v", len(str), err)
-			} else {
-				log.Debugf("message sent of length %v", len(str))
-			}
-		case <-stop:
-			return
-		}
-	}
-}
-
-func (g *Game) simulateDay(day int, users []*discordgo.User, outCh chan string) ([]*discordgo.User, error) {
+func (g *Game) runDay(day int, users []*discordgo.User) ([]*discordgo.User, error) {
 	if len(users) == 1 {
 		return users, nil
 	}
@@ -168,7 +165,7 @@ func (g *Game) simulateDay(day int, users []*discordgo.User, outCh chan string) 
 
 	if killCount == 0 {
 		output = append(output, fmt.Sprintf("All was quiet on day %v", day+1))
-		g.send(output, outCh)
+		g.sendDayOutput(output)
 		return users, nil
 	}
 
@@ -206,7 +203,7 @@ func (g *Game) simulateDay(day int, users []*discordgo.User, outCh chan string) 
 		fmt.Sprintf("Players remaining at the end of day %v: %v", day+1, strings.Join(livingNames, ", ")),
 	)
 
-	g.send(output, outCh)
+	g.sendDayOutput(output)
 	return living, nil
 }
 
@@ -237,14 +234,14 @@ func (g *Game) getRandomPhrase(dying *discordgo.User, alive []*discordgo.User) s
 	return result.String()
 }
 
-func (g *Game) send(lines []string, out chan string) {
+func (g *Game) sendDayOutput(lines []string) {
 	output := "---"
 
 	for _, line := range lines {
 		next := fmt.Sprintf("\n> %v", line)
 
 		if len(output)+len(next) > settings.DiscordMaxMessageLength {
-			out <- output
+			g.sendCh <- output
 			output = ""
 		}
 
@@ -252,6 +249,6 @@ func (g *Game) send(lines []string, out chan string) {
 	}
 
 	if len(output) > 0 {
-		out <- output
+		g.sendCh <- output
 	}
 }

@@ -25,7 +25,10 @@ func messageHandler(session *discordgo.Session, mc *discordgo.MessageCreate) {
 
 	switch {
 	case strings.HasPrefix(mc.Content, settings.CMD_HG):
-		game.NewGame().Start(session, mc)
+		sender := game.NewDiscordSender(session, mc.ChannelID)
+		if _, err := game.NewGame(session, mc.Author, mc.Content, sender).Start(); err != nil {
+			log.Errorf("error starting game: %v", err)
+		}
 	default:
 		session.ChannelMessageSend(mc.ChannelID, "Unknown command")
 	}

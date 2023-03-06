@@ -1,4 +1,4 @@
-package main
+package game
 
 import (
 	"bytes"
@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/deadloct/bitheroes-hg-bot/settings"
 
 	"github.com/bwmarrin/discordgo"
 	log "github.com/sirupsen/logrus"
@@ -17,16 +19,16 @@ func NewGame() *Game { return &Game{} }
 
 func (g *Game) Start(session *discordgo.Session, mc *discordgo.MessageCreate) (chan struct{}, error) {
 	// The start delay gives people time to react before the game starts
-	delay := DefaultStartDelay
+	delay := settings.DefaultStartDelay
 	parts := strings.Split(mc.Content, " ")
 	if len(parts) > 1 {
-		if num, err := strconv.Atoi(parts[1]); err == nil && num >= MinimumStartDelay && num <= MaximumStartDelay {
+		if num, err := strconv.Atoi(parts[1]); err == nil && num >= settings.MinimumStartDelay && num <= settings.MaximumStartDelay {
 			delay = time.Duration(num) * time.Second
 		}
 	}
 
 	// This is the welcome messsage that people react to to enter.
-	intro, err := g.getIntro(IntroValues{
+	intro, err := g.getIntro(settings.IntroValues{
 		User:  mc.Author.Username,
 		Delay: delay,
 	})
@@ -43,9 +45,9 @@ func (g *Game) Start(session *discordgo.Session, mc *discordgo.MessageCreate) (c
 	return g.delayedStart(delay, session, msg), nil
 }
 
-func (g *Game) getIntro(vals IntroValues) (string, error) {
+func (g *Game) getIntro(vals settings.IntroValues) (string, error) {
 	var result bytes.Buffer
-	if err := Intro.Execute(&result, vals); err != nil {
+	if err := settings.Intro.Execute(&result, vals); err != nil {
 		return "", err
 	}
 
@@ -71,7 +73,8 @@ func (g *Game) delayedStart(delay time.Duration, session *discordgo.Session, msg
 func (g *Game) launchGame(session *discordgo.Session, msg *discordgo.Message, stop chan struct{}) error {
 	log.Debug("starting game")
 
-	users, err := session.MessageReactions(msg.ChannelID, msg.ID, ParticipantEmoji, 100, "", "")
+	// TODO: only retrieves 100, need to get more somehow
+	users, err := session.MessageReactions(msg.ChannelID, msg.ID, settings.ParticipantEmoji, 100, "", "")
 	if err != nil {
 		log.Fatalf("could not retrieve reactions: %v", err)
 	}
@@ -95,6 +98,10 @@ func (g *Game) launchGame(session *discordgo.Session, msg *discordgo.Message, st
 	go g.handleOutput(session, msg, out, stop)
 
 	for day := 0; len(users) > 1; day++ {
+		if day > 0 {
+			time.Sleep(settings.DayDelay)
+		}
+
 		select {
 		case <-stop:
 			log.Info("game cancelled")
@@ -106,7 +113,6 @@ func (g *Game) launchGame(session *discordgo.Session, msg *discordgo.Message, st
 			}
 
 			log.Debugf("users left after day %v: %v", day, len(users))
-			time.Sleep(DayDelay)
 		}
 	}
 
@@ -212,18 +218,18 @@ func (g *Game) getRandomPhrase(dying *discordgo.User, alive []*discordgo.User) s
 		killer = alive[killerNum].Username
 	}
 
-	tmplNum, err := GetRandomInt(0, len(Phrases))
+	tmplNum, err := GetRandomInt(0, len(settings.Phrases))
 	if err != nil {
 		log.Errorf("could not retrieve random int for picking a phrase: %v", err)
 		return defaultPhrase
 	}
 
-	vals := PhraseValues{
+	vals := settings.PhraseValues{
 		Killer: killer,
 		Dying:  dying.Username,
 	}
 	var result bytes.Buffer
-	if err := Phrases[tmplNum].Execute(&result, vals); err != nil {
+	if err := settings.Phrases[tmplNum].Execute(&result, vals); err != nil {
 		log.Errorf("error executing template with vals: %v", err)
 		return defaultPhrase
 	}
@@ -237,7 +243,7 @@ func (g *Game) send(lines []string, out chan string) {
 	for _, line := range lines {
 		next := fmt.Sprintf("\n> %v", line)
 
-		if len(output)+len(next) > DiscordMaxMessageLength {
+		if len(output)+len(next) > settings.DiscordMaxMessageLength {
 			out <- output
 			output = ""
 		}

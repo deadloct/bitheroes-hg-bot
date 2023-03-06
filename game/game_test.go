@@ -1,9 +1,11 @@
-package main
+package game
 
 import (
 	"fmt"
 	"html/template"
 	"testing"
+
+	"github.com/deadloct/bitheroes-hg-bot/settings"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -11,14 +13,14 @@ import (
 func testSetupPhrases(t *testing.T, testPhrases []string) {
 	t.Helper()
 
-	Phrases = nil
+	settings.Phrases = nil
 	for i, phrase := range testPhrases {
 		tmpl, err := template.New(fmt.Sprintf("phrase-%v", i)).Parse(phrase)
 		if err != nil {
 			t.Fatalf("error loading test phrase '%v': %v", phrase, err)
 		}
 
-		Phrases = append(Phrases, tmpl)
+		settings.Phrases = append(settings.Phrases, tmpl)
 	}
 }
 

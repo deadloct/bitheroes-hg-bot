@@ -7,6 +7,8 @@ import (
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/deadloct/bitheroes-hg-bot/game"
+	"github.com/deadloct/bitheroes-hg-bot/settings"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -22,8 +24,8 @@ func messageHandler(session *discordgo.Session, mc *discordgo.MessageCreate) {
 	}
 
 	switch {
-	case strings.HasPrefix(mc.Content, CMD_HG):
-		NewGame().Start(session, mc)
+	case strings.HasPrefix(mc.Content, settings.CMD_HG):
+		game.NewGame().Start(session, mc)
 	default:
 		session.ChannelMessageSend(mc.ChannelID, "Unknown command")
 	}

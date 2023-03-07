@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	log.Info("Verbose logs enabled")
+	log.Info("verbose logs enabled")
 	log.SetLevel(log.DebugLevel)
 }
 
@@ -24,9 +24,8 @@ func messageHandler(session *discordgo.Session, mc *discordgo.MessageCreate) {
 	}
 
 	switch {
-	case strings.HasPrefix(mc.Content, settings.CMD_HG):
-		sender := game.NewDiscordSender(session, mc.ChannelID)
-		if _, err := game.NewGame(session, mc.Author, mc.Content, sender).Start(); err != nil {
+	case strings.HasPrefix(mc.Content, settings.CMDHG):
+		if err := game.ManagerInstance(session).StartGame(mc.ChannelID, mc.Content, mc.Author); err != nil {
 			log.Errorf("error starting game: %v", err)
 		}
 	default:

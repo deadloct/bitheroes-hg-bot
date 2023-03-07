@@ -12,10 +12,11 @@ import (
 )
 
 const (
-	CMD_PREFIX = "!"
-	CMD_HG     = CMD_PREFIX + "hg"
+	CMDPrefix = "!"
+	CMDHG     = CMDPrefix + "hg"
 
-	ParticipantEmoji = "🕊️" // :dove:
+	ParticipantEmoji     = "🕊️"
+	ParticipantEmojiName = "dove"
 
 	DefaultStartDelay = 5 * time.Second
 	MinimumStartDelay = 30  // Seconds

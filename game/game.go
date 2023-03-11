@@ -61,6 +61,8 @@ func (g *Game) Start(ctx context.Context) error {
 		return err
 	}
 
+	g.Session.MessageReactionAdd(g.introMessage.ChannelID, g.introMessage.ID, settings.ParticipantEmoji)
+
 	g.delayedStart(ctx)
 	return nil
 }
@@ -127,27 +129,34 @@ func (g *Game) run(ctx context.Context) {
 
 	// TODO: only retrieves 100, need to get more somehow
 	// TODO: don't directly access session to remove dependency and make testing easier
-	users, err := g.Session.MessageReactions(g.introMessage.ChannelID, g.introMessage.ID,
+	usersWithBot, err := g.Session.MessageReactions(g.introMessage.ChannelID, g.introMessage.ID,
 		settings.ParticipantEmoji, 100, "", "")
 	if err != nil {
 		log.Fatalf("could not retrieve reactions: %v", err)
 	}
 
+	var users []*discordgo.User
+	for _, u := range usersWithBot {
+		if !u.Bot {
+			users = append(users, u)
+		}
+	}
+
 	if len(users) == 0 {
-		g.Sender.Send("No users entered the contest")
+		g.Sender.Send(fmt.Sprintf("No tributes have come forward within %v. This district will be eliminated.", g.Delay))
 		g.Lock()
 		g.state = Cancelled
 		g.Unlock()
 		return
 	}
 
-	// // TODO: Remove this testing code
-	// for i := 1; i < 3; i++ {
-	// 	users = append(users, &discordgo.User{
-	// 		Username: fmt.Sprintf("%v-%v", users[0].Username, i),
-	// 		ID:       users[0].ID,
-	// 	})
-	// }
+	// TODO: Remove this testing code
+	for i := 1; i < 5; i++ {
+		users = append(users, &discordgo.User{
+			Username: fmt.Sprintf("%v-%v", users[0].Username, i),
+			ID:       users[0].ID,
+		})
+	}
 
 	log.Debugf("tribute count: %v", len(users))
 
@@ -229,7 +238,7 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 	}
 
 	if killCount == 0 {
-		output = append(output, fmt.Sprintf("**All was quiet on day %v**", day+1))
+		output = append(output, fmt.Sprintf("**All was quiet on day %v.**", day+1))
 		g.sendDayOutput(output)
 		return users, nil
 	}

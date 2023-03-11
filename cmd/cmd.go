@@ -88,7 +88,7 @@ func DeregisterCommmands(session *discordgo.Session) error {
 func Handler(session *discordgo.Session, ic *discordgo.InteractionCreate) {
 	session.InteractionRespond(ic.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{Content: "Command acknowledged. Engaging the Capitol of Panem."},
+		Data: &discordgo.InteractionResponseData{Content: "Command acknowledged. Engaging the capitol of Panem."},
 	})
 
 	options := ic.ApplicationCommandData().Options

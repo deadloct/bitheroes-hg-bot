@@ -15,9 +15,9 @@ const (
 	ParticipantEmoji     = "🕊️"
 	ParticipantEmojiName = "dove"
 
-	DefaultStartDelay = 5 * time.Second
-	MinimumStartDelay = 30  // Seconds
-	MaximumStartDelay = 600 // 10 minutes in seconds
+	DefaultStartDelay = 60 * time.Second
+	MinimumStartDelay = 5   // Seconds
+	MaximumStartDelay = 900 // 15 minutes in seconds
 
 	DayDelay = 5 * time.Second
 
@@ -26,6 +26,8 @@ const (
 	IntroFile    = "intro.template"
 
 	DiscordMaxMessageLength = 2000
+
+	DefaultSeparator = "_,.-'~'-.,__,.-'~'-.,_"
 )
 
 var (

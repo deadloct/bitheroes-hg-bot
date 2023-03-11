@@ -187,10 +187,13 @@ func (g *Game) run(ctx context.Context) {
 	}
 
 	log.Debugf("winners: %v", mentions)
-	g.sendCh <- `---
-> This year's Hunger Games have concluded.
-> 
-> Congratulations to our new victor(s): ` + strings.Join(mentions, ", ")
+	g.sendCh <- strings.Join([]string{
+		"> " + settings.DefaultSeparator,
+		"> This year's Hunger Games have concluded.",
+		"> ",
+		fmt.Sprintf("> **Congratulations to our new victor(s), %v!**", strings.Join(mentions, ", ")),
+		"> " + settings.DefaultSeparator,
+	}, "\n")
 
 	g.Lock()
 	g.state = Finished
@@ -202,7 +205,12 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 		return users, nil
 	}
 
-	output := []string{fmt.Sprintf("Beginning day %v...", day+1)}
+	output := []string{
+		settings.DefaultSeparator,
+		fmt.Sprintf("**𝔹𝕖𝕘𝕚𝕟𝕟𝕚𝕟𝕘 𝔻𝕒𝕪 %v**", day+1),
+		settings.DefaultSeparator,
+		" ",
+	}
 
 	// min and max are 0-based
 	var min int
@@ -221,7 +229,7 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 	}
 
 	if killCount == 0 {
-		output = append(output, fmt.Sprintf("All was quiet on day %v", day+1))
+		output = append(output, fmt.Sprintf("**All was quiet on day %v**", day+1))
 		g.sendDayOutput(output)
 		return users, nil
 	}
@@ -257,7 +265,7 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 
 	output = append(
 		output,
-		fmt.Sprintf("Players remaining at the end of day %v: %v", day+1, strings.Join(livingNames, ", ")),
+		fmt.Sprintf("**Players remaining at the end of day %v:** %v", day+1, strings.Join(livingNames, ", ")),
 	)
 
 	select {
@@ -285,7 +293,7 @@ func (g *Game) getRandomPhrase(dying *discordgo.User, alive []*discordgo.User) s
 
 	vals := settings.PhraseValues{
 		Killer: killer,
-		Dying:  dying.Username,
+		Dying:  fmt.Sprintf("<@%v>", dying.ID),
 	}
 	var result bytes.Buffer
 	if err := settings.Phrases[tmplNum].Execute(&result, vals); err != nil {
@@ -297,7 +305,7 @@ func (g *Game) getRandomPhrase(dying *discordgo.User, alive []*discordgo.User) s
 }
 
 func (g *Game) sendDayOutput(lines []string) {
-	output := "---"
+	var output string
 
 	for _, line := range lines {
 		next := fmt.Sprintf("\n> %v", line)

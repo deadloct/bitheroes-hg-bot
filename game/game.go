@@ -2,9 +2,10 @@ package game
 
 import (
 	"bytes"
+	"context"
 	"fmt"
-	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/deadloct/bitheroes-hg-bot/settings"
@@ -13,47 +14,83 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type GameState int
+
+const (
+	NotStarted GameState = iota
+	Started
+	Finished
+	Cancelled
+)
+
+type GameConfig struct {
+	Author  *discordgo.User
+	Delay   time.Duration // delayed start
+	Sender  Sender
+	Session *discordgo.Session
+}
+
 type Game struct {
-	author *discordgo.User
-	cmd    string
-	sender Sender
+	GameConfig
 
 	introMessage *discordgo.Message
 	sendCh       chan string
-	session      *discordgo.Session
+	state        GameState
+
+	sync.Mutex
 }
 
-func NewGame(session *discordgo.Session, author *discordgo.User, cmd string, sender Sender) *Game {
-	return &Game{author: author, cmd: cmd, sender: sender, session: session}
+func NewGame(cfg GameConfig) *Game {
+	return &Game{GameConfig: cfg}
 }
 
-func (g *Game) Start() (chan struct{}, error) {
-	g.sendCh = g.sender.Start()
-
-	// The start delay gives people time to react before the game starts
-	delay := settings.DefaultStartDelay
-	parts := strings.Split(g.cmd, " ")
-	if len(parts) > 1 {
-		if num, err := strconv.Atoi(parts[1]); err == nil && num >= settings.MinimumStartDelay && num <= settings.MaximumStartDelay {
-			delay = time.Duration(num) * time.Second
-		}
-	}
+func (g *Game) Start(ctx context.Context) error {
+	g.sendCh = g.Sender.Start()
 
 	// This is the welcome messsage that people react to to enter.
 	intro, err := g.getIntro(settings.IntroValues{
-		User:  g.author.Username,
-		Delay: delay,
+		User:  g.Author.Username,
+		Delay: g.Delay,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	log.Debug("sending intro")
-	if g.introMessage, err = g.sender.Send(intro); err != nil {
-		return nil, err
+	if g.introMessage, err = g.Sender.Send(intro); err != nil {
+		return err
 	}
 
-	return g.delayedStart(delay), nil
+	g.delayedStart(ctx)
+	return nil
+}
+
+func (g *Game) GetState() GameState {
+	g.Lock()
+	defer g.Unlock()
+
+	return g.state
+}
+
+func (g *Game) HasStarted() bool {
+	g.Lock()
+	defer g.Unlock()
+
+	return g.state != NotStarted
+}
+
+func (g *Game) IsRunning() bool {
+	g.Lock()
+	defer g.Unlock()
+
+	return g.state == Started
+}
+
+func (g *Game) HasEnded() bool {
+	g.Lock()
+	defer g.Unlock()
+
+	return g.state == Finished || g.state == Cancelled
 }
 
 func (g *Game) getIntro(vals settings.IntroValues) (string, error) {
@@ -65,36 +102,43 @@ func (g *Game) getIntro(vals settings.IntroValues) (string, error) {
 	return result.String(), nil
 }
 
-func (g *Game) delayedStart(delay time.Duration) chan struct{} {
-	log.Debugf("delaying start by %v", delay)
+func (g *Game) delayedStart(ctx context.Context) {
+	log.Debugf("delaying start by %v", g.Delay)
 
-	stop := make(chan struct{})
 	go func() {
 		select {
-		case <-stop:
-			log.Info("game cancelled")
-		case <-time.After(delay):
-			g.run(stop)
+		case <-ctx.Done():
+			log.Info("context done, cancelling game")
+			g.Lock()
+			g.state = Cancelled
+			g.Unlock()
+
+		case <-time.After(g.Delay):
+			g.run(ctx)
 		}
 	}()
-
-	return stop
 }
 
-func (g *Game) run(stop chan struct{}) error {
+func (g *Game) run(ctx context.Context) {
 	log.Debug("starting game")
+	g.Lock()
+	g.state = Started
+	g.Unlock()
 
 	// TODO: only retrieves 100, need to get more somehow
 	// TODO: don't directly access session to remove dependency and make testing easier
-	users, err := g.session.MessageReactions(g.introMessage.ChannelID, g.introMessage.ID,
+	users, err := g.Session.MessageReactions(g.introMessage.ChannelID, g.introMessage.ID,
 		settings.ParticipantEmoji, 100, "", "")
 	if err != nil {
 		log.Fatalf("could not retrieve reactions: %v", err)
 	}
 
 	if len(users) == 0 {
-		g.sender.Send("No users entered the contest")
-		return nil
+		g.Sender.Send("No users entered the contest")
+		g.Lock()
+		g.state = Cancelled
+		g.Unlock()
+		return
 	}
 
 	// TODO: Remove this testing code
@@ -113,13 +157,24 @@ func (g *Game) run(stop chan struct{}) error {
 		}
 
 		select {
-		case <-stop:
-			log.Info("game cancelled")
+		case <-ctx.Done():
+			log.Infof("context done, cancelling game on day %v", day)
+			g.Sender.Send(fmt.Sprintf("cancelled game after day %v", day+1))
+			g.Lock()
+			g.state = Cancelled
+			g.Unlock()
+			return
+
 		default:
 			log.Debugf("simulating day %v with %v tributes", day, len(users))
-			users, err = g.runDay(day, users)
+			users, err = g.runDay(ctx, day, users)
 			if err != nil {
 				log.Errorf("failed to simulate day %v: %v", day, err)
+				g.Sender.Send(fmt.Sprintf("failed to run game for day %v", day+1))
+				g.Lock()
+				g.state = Cancelled
+				g.Unlock()
+				return
 			}
 
 			log.Debugf("users left after day %v: %v", day, len(users))
@@ -136,11 +191,13 @@ func (g *Game) run(stop chan struct{}) error {
 > This year's Hunger Games have concluded.
 > 
 > Congratulations to our new victor(s): ` + strings.Join(mentions, ", ")
-	close(stop)
-	return nil
+
+	g.Lock()
+	g.state = Finished
+	g.Unlock()
 }
 
-func (g *Game) runDay(day int, users []*discordgo.User) ([]*discordgo.User, error) {
+func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]*discordgo.User, error) {
 	if len(users) == 1 {
 		return users, nil
 	}
@@ -203,7 +260,12 @@ func (g *Game) runDay(day int, users []*discordgo.User) ([]*discordgo.User, erro
 		fmt.Sprintf("Players remaining at the end of day %v: %v", day+1, strings.Join(livingNames, ", ")),
 	)
 
-	g.sendDayOutput(output)
+	select {
+	case <-ctx.Done():
+	default:
+		g.sendDayOutput(output)
+	}
+
 	return living, nil
 }
 

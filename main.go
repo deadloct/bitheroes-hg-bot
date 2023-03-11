@@ -3,36 +3,16 @@ package main
 import (
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/deadloct/bitheroes-hg-bot/game"
-	"github.com/deadloct/bitheroes-hg-bot/settings"
+	"github.com/deadloct/bitheroes-hg-bot/cmd"
 	log "github.com/sirupsen/logrus"
 )
 
 func init() {
 	log.Info("verbose logs enabled")
 	log.SetLevel(log.DebugLevel)
-}
-
-func messageHandler(session *discordgo.Session, mc *discordgo.MessageCreate) {
-	// Ignore messages from the bot
-	if mc.Author.ID == session.State.User.ID {
-		return
-	}
-
-	switch {
-	case strings.HasPrefix(mc.Content, settings.CMDHG):
-		if err := game.ManagerInstance(session).StartGame(mc.ChannelID, mc.Content, mc.Author); err != nil {
-			log.Errorf("error starting game: %v", err)
-		}
-	default:
-		session.ChannelMessageSend(mc.ChannelID, "Unknown command")
-	}
-
-	// ignore everything else
 }
 
 func main() {
@@ -43,10 +23,16 @@ func main() {
 
 	// Listen for server messages only
 	session.Identify.Intents = discordgo.IntentGuildMessages | discordgo.IntentGuildMessageReactions | discordgo.IntentMessageContent
-	session.AddHandler(messageHandler)
+	session.AddHandler(cmd.Handler)
 	if err := session.Open(); err != nil {
 		log.Panic(err)
 	}
+
+	err = cmd.RegisterCommands(session)
+	if err != nil {
+		log.Panicf("error registering slash commands: %v", err)
+	}
+	defer cmd.DeregisterCommmands(session)
 
 	log.Info("Bot is now running. Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)

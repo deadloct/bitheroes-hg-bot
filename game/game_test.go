@@ -24,7 +24,7 @@ func TestGame_getRandomPhrase_SingleReplace(t *testing.T) {
 	s.Start()
 	defer s.Stop()
 
-	actual := NewGame(nil, nil, "", s).getRandomPhrase(dying, living)
+	actual := NewGame(GameConfig{Sender: s}).getRandomPhrase(dying, living)
 	expected1 := fmt.Sprintf("%v killed by %v", dying.Username, living[0].Username)
 	expected2 := fmt.Sprintf("%v killed by %v", dying.Username, living[1].Username)
 	if actual != expected1 && actual != expected2 {
@@ -48,7 +48,7 @@ func TestGame_getRandomPhrase_MultiReplace(t *testing.T) {
 	s.Start()
 	defer s.Stop()
 
-	actual := NewGame(nil, nil, "", s).getRandomPhrase(dying, living)
+	actual := NewGame(GameConfig{Sender: s}).getRandomPhrase(dying, living)
 	expected1 := fmt.Sprintf(phrase, living[0].Username, dying.Username, dying.Username, living[0].Username)
 	expected2 := fmt.Sprintf(phrase, living[1].Username, dying.Username, dying.Username, living[1].Username)
 	if actual != expected1 && actual != expected2 {

@@ -12,9 +12,6 @@ import (
 )
 
 const (
-	CMDPrefix = "!"
-	CMDHG     = CMDPrefix + "hg"
-
 	ParticipantEmoji     = "🕊️"
 	ParticipantEmojiName = "dove"
 

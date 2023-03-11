@@ -122,7 +122,6 @@ func Handler(session *discordgo.Session, ic *discordgo.InteractionCreate) {
 
 		if err := game.ManagerInstance(session).StartGame(ic.ChannelID, delay, ic.Member.User); err != nil {
 			log.Errorf("error starting game: %v", err)
-			session.ChannelMessageSend(ic.ChannelID, "The game could not be started due to an uprising in an outer district.")
 		}
 
 	case CommandCancel:

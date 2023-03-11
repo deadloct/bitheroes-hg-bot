@@ -168,7 +168,6 @@ func (g *Game) run(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			log.Infof("context done, cancelling game on day %v", day)
-			g.Sender.Send(fmt.Sprintf("cancelled game after day %v", day+1))
 			g.Lock()
 			g.state = Cancelled
 			g.Unlock()

@@ -86,6 +86,22 @@ func DeregisterCommmands(session *discordgo.Session) error {
 }
 
 func Handler(session *discordgo.Session, ic *discordgo.InteractionCreate) {
+	if ic.Member == nil {
+		log.Infof("user attempted to run the bot from outside a channel: %v", ic.User.ID)
+		content := "Citizens must sponsor a new Hunger Games from a channel."
+
+		err := session.InteractionRespond(ic.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{Content: content},
+		})
+
+		if err != nil {
+			log.Errorf("error when user attempted to run commands outside a channel: %v", err)
+		}
+
+		return
+	}
+
 	session.InteractionRespond(ic.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{Content: "Command acknowledged. Engaging the capitol of Panem."},

@@ -49,6 +49,8 @@ func (m *Manager) StartGame(channel string, delay time.Duration, author *discord
 	}
 
 	sender.Send("Starting a Hunger Games event in this channel. Any existing, unstarted games will be cancelled.")
+	m.EndGame(channel)
+
 	log.Infof("starting game in channel %v", channel)
 
 	g := NewGame(GameConfig{

@@ -107,7 +107,6 @@ func Handler(session *discordgo.Session, ic *discordgo.InteractionCreate) {
 				v := int(option.IntValue())
 				switch {
 				case v < settings.MinimumStartDelay:
-					// TODO: send info to channel
 					msg := fmt.Sprintf("The delay of %v is much too short. Hunger Games will wait for %v instead.", v, settings.DefaultStartDelay)
 					session.ChannelMessageSend(ic.ChannelID, msg)
 					log.Warn(msg)

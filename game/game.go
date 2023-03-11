@@ -141,13 +141,13 @@ func (g *Game) run(ctx context.Context) {
 		return
 	}
 
-	// TODO: Remove this testing code
-	for i := 1; i < 120; i++ {
-		users = append(users, &discordgo.User{
-			Username: fmt.Sprintf("%v-%v", users[0].Username, i),
-			ID:       users[0].ID,
-		})
-	}
+	// // TODO: Remove this testing code
+	// for i := 1; i < 3; i++ {
+	// 	users = append(users, &discordgo.User{
+	// 		Username: fmt.Sprintf("%v-%v", users[0].Username, i),
+	// 		ID:       users[0].ID,
+	// 	})
+	// }
 
 	log.Debugf("tribute count: %v", len(users))
 

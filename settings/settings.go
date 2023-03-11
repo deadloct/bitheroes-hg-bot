@@ -3,9 +3,9 @@ package settings
 import (
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"io/ioutil"
 	"path"
+	"text/template"
 	"time"
 
 	log "github.com/sirupsen/logrus"

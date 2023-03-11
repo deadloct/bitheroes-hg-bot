@@ -2,9 +2,9 @@ package game
 
 import (
 	"fmt"
-	"html/template"
 	"sync"
 	"testing"
+	"text/template"
 
 	"github.com/deadloct/bitheroes-hg-bot/settings"
 

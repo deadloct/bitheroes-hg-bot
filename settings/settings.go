@@ -45,7 +45,7 @@ type PhraseValues struct {
 	Killer string
 }
 
-func init() {
+func ImportData() {
 	importIntro()
 	importPhrases()
 }

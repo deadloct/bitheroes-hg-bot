@@ -106,7 +106,7 @@ func (m *Manager) ClearMessagesForChannel(channel string) {
 	defer m.Unlock()
 
 	if _, exists := m.games[channel]; exists {
-		log.Info("clearing messages in channel %v", channel)
+		log.Infof("clearing messages in channel %v", channel)
 		// TODO: Implement this
 		// rg.Game.ClearMessages()
 	}

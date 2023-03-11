@@ -7,12 +7,15 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/deadloct/bitheroes-hg-bot/cmd"
+	"github.com/deadloct/bitheroes-hg-bot/settings"
 	log "github.com/sirupsen/logrus"
 )
 
 func init() {
 	log.Info("verbose logs enabled")
 	log.SetLevel(log.DebugLevel)
+
+	settings.ImportData()
 }
 
 func main() {

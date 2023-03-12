@@ -145,6 +145,6 @@ func CommandHandler(session *discordgo.Session, ic *discordgo.InteractionCreate)
 		session.ChannelMessageSend(ic.ChannelID, "District uprising ended the games early. The dissidents of the uprising will be eliminated.")
 
 	case CommandClear:
-		session.ChannelMessageSend(ic.ChannelID, "This command is not yet supported. Panem issues our sincerest apologies and politely requests your obedience.")
+		game.ManagerInstance(session).ClearBotMessages(ic.ChannelID)
 	}
 }

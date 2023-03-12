@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/deadloct/bitheroes-hg-bot/settings"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -115,13 +116,63 @@ func (m *Manager) CanStart(channel string) bool {
 	return true
 }
 
-func (m *Manager) ClearMessagesForChannel(channel string) {
-	m.Lock()
-	defer m.Unlock()
-
-	if _, exists := m.games[channel]; exists {
-		log.Infof("clearing messages in channel %v", channel)
-		// TODO: Implement this
-		// rg.Game.ClearMessages()
+func (m *Manager) RetrieveBotMessagesInChannel(channelID, lastMessageID string, messages []string) ([]string, error) {
+	new, err := m.session.ChannelMessages(channelID, settings.DiscordMaxMessages, lastMessageID, "", "")
+	if err != nil {
+		log.Error("could not retrieve messages: %v", err)
+		return nil, err
 	}
+
+	for i := 0; i < len(new); i++ {
+		// Only delete bot messages
+		if new[i].Author.ID == m.session.State.User.ID {
+			messages = append(messages, new[i].ID)
+		}
+	}
+
+	if len(new) == settings.DiscordMaxMessages {
+		last := new[len(new)-1].ID
+		return m.RetrieveBotMessagesInChannel(channelID, last, messages)
+	}
+
+	return messages, nil
+}
+
+func (m *Manager) ClearBotMessages(channelID string) error {
+	log.Infof("attempting to delete bot messages in channel %v", channelID)
+
+	msgs, err := m.RetrieveBotMessagesInChannel(channelID, "", nil)
+	if err != nil {
+		log.Errorf("unable to retrieve messages to delete: %v", err)
+	}
+
+	log.Infof("deleting %v bot messages in channel %v", len(msgs), channelID)
+
+	if len(msgs) > 0 {
+		return m.clearBotMessagesRecursively(channelID, msgs)
+	}
+
+	log.Info("finished deleting messages")
+	return nil
+}
+
+func (m *Manager) clearBotMessagesRecursively(channelID string, messages []string) error {
+	var toDelete []string
+	if len(toDelete) > 0 {
+		toDelete = messages[:settings.DiscordMaxBulkDelete]
+	} else {
+		toDelete = messages
+	}
+
+	if err := m.session.ChannelMessagesBulkDelete(channelID, toDelete); err != nil {
+		log.Errorf("could not bulk delete messages: %v", err)
+		return err
+	}
+
+	if len(messages) > settings.DiscordMaxBulkDelete {
+		messages = messages[settings.DiscordMaxBulkDelete:]
+		return m.clearBotMessagesRecursively(channelID, messages)
+	}
+
+	return nil
 }

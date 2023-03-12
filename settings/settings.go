@@ -26,6 +26,8 @@ const (
 	IntroFile    = "intro.template"
 
 	DiscordMaxMessageLength = 2000
+	DiscordMaxMessages      = 100
+	DiscordMaxBulkDelete    = 100
 
 	DefaultSeparator = "_,.-'~'-.,__,.-'~'-.,_"
 	HalfSeparator    = "_,.-'~'-.,_"

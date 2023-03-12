@@ -151,19 +151,19 @@ func (g *Game) run(ctx context.Context) {
 	}
 
 	// TODO: Remove this testing code
-	for i := 1; i < 5; i++ {
-		users = append(users, &discordgo.User{
-			Username: fmt.Sprintf("%v-%v", users[0].Username, i),
-			ID:       users[0].ID,
-		})
+	for _, u := range users {
+		for i := 2; i < 6; i++ {
+			users = append(users, &discordgo.User{
+				Username: fmt.Sprintf("%v-%v", u.Username, i),
+				ID:       u.ID,
+			})
+		}
 	}
 
-	log.Debugf("tribute count: %v", len(users))
+	g.sendTributeOutput(users)
 
 	for day := 0; len(users) > 1; day++ {
-		if day > 0 {
-			time.Sleep(settings.DayDelay)
-		}
+		time.Sleep(settings.DayDelay)
 
 		select {
 		case <-ctx.Done():
@@ -273,6 +273,7 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 
 	output = append(
 		output,
+		"",
 		fmt.Sprintf("**Players remaining at the end of day %v:** %v", day+1, strings.Join(livingNames, ", ")),
 	)
 
@@ -310,6 +311,25 @@ func (g *Game) getRandomPhrase(dying *discordgo.User, alive []*discordgo.User) s
 	}
 
 	return result.String()
+}
+
+func (g *Game) sendTributeOutput(users []*discordgo.User) {
+	log.Debugf("tribute count: %v", len(users))
+
+	tributeLines := []string{
+		settings.DefaultSeparator,
+		"Please welcome our brave tributes!",
+		settings.DefaultSeparator,
+		"",
+		"What a fantastic group of individuals we have for this year's contest:",
+	}
+	var tributes []string
+	for _, u := range users {
+		tributes = append(tributes, u.Username)
+	}
+
+	tributeLines = append(tributeLines, strings.Join(tributes, ", "), "", settings.DefaultSeparator)
+	g.sendDayOutput(tributeLines)
 }
 
 func (g *Game) sendDayOutput(lines []string) {

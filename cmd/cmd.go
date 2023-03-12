@@ -85,7 +85,7 @@ func DeregisterCommmands(session *discordgo.Session) error {
 	return nil
 }
 
-func Handler(session *discordgo.Session, ic *discordgo.InteractionCreate) {
+func CommandHandler(session *discordgo.Session, ic *discordgo.InteractionCreate) {
 	if ic.Member == nil {
 		log.Infof("user attempted to run the bot from outside a channel: %v", ic.User.ID)
 		content := "Citizens must sponsor a new Hunger Games from a channel."
@@ -148,22 +148,3 @@ func Handler(session *discordgo.Session, ic *discordgo.InteractionCreate) {
 		session.ChannelMessageSend(ic.ChannelID, "This command is not yet supported. Panem issues our sincerest apologies and politely requests your obedience.")
 	}
 }
-
-//func HandlerOld(session *discordgo.Session, mc *discordgo.MessageCreate) {
-//	// Ignore messages from the bot
-//	if mc.Author.ID == session.State.User.ID {
-//		return
-//	}
-//
-//	switch {
-//	case strings.HasPrefix(mc.Content, cmd.CMDPrefix):
-//		if err := game.ManagerInstance(session).StartGame(mc.ChannelID, mc.Content, mc.Author); err != nil {
-//			log.Errorf("error starting game: %v", err)
-//		}
-//
-//	default:
-//		session.ChannelMessageSend(mc.ChannelID, "Unknown command")
-//	}
-//
-//	// ignore everything else
-//}

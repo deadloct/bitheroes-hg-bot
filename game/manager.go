@@ -81,6 +81,18 @@ func (m *Manager) StartGame(channel string, delay time.Duration, author *discord
 	return nil
 }
 
+func (m *Manager) ReactionHandler(session *discordgo.Session, mra *discordgo.MessageReactionAdd) {
+	m.Lock()
+	defer m.Unlock()
+
+	rg, ok := m.games[mra.ChannelID]
+	if !ok {
+		return
+	}
+
+	rg.Game.RegisterUser(mra.MessageID, mra.Emoji.Name, mra.Member.User)
+}
+
 func (m *Manager) EndGame(channel string) {
 	m.Lock()
 	defer m.Unlock()

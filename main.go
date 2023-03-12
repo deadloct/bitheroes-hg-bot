@@ -7,6 +7,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/deadloct/bitheroes-hg-bot/cmd"
+	"github.com/deadloct/bitheroes-hg-bot/game"
 	"github.com/deadloct/bitheroes-hg-bot/settings"
 	log "github.com/sirupsen/logrus"
 )
@@ -26,7 +27,8 @@ func main() {
 
 	// Listen for server messages only
 	session.Identify.Intents = discordgo.IntentGuildMessages | discordgo.IntentGuildMessageReactions | discordgo.IntentMessageContent
-	session.AddHandler(cmd.Handler)
+	session.AddHandler(cmd.CommandHandler)
+	session.AddHandler(game.ManagerInstance(session).ReactionHandler)
 	if err := session.Open(); err != nil {
 		log.Panic(err)
 	}

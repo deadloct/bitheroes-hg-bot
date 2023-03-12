@@ -15,10 +15,7 @@ func TestGame_getRandomPhrase_SingleReplace(t *testing.T) {
 	testSetupPhrases(t, []string{"{{.Dying}} killed by {{.Killer}}"})
 
 	dying := &discordgo.User{Username: "dying user"}
-	living := []*discordgo.User{
-		{ID: "1"},
-		{ID: "2"},
-	}
+	living := []string{"Player 1", "Player 2"}
 
 	s := &BufferSender{}
 	s.Start()
@@ -26,8 +23,8 @@ func TestGame_getRandomPhrase_SingleReplace(t *testing.T) {
 
 	actual := NewGame(GameConfig{Sender: s}).getRandomPhrase(dying, living)
 	dyingMention := fmt.Sprintf("<@%v>", dying.ID)
-	expected1 := fmt.Sprintf("%v killed by %v", dyingMention, living[0].Username)
-	expected2 := fmt.Sprintf("%v killed by %v", dyingMention, living[1].Username)
+	expected1 := fmt.Sprintf("%v killed by %v", dyingMention, living[0])
+	expected2 := fmt.Sprintf("%v killed by %v", dyingMention, living[1])
 	if actual != expected1 && actual != expected2 {
 		t.Errorf("expected '%v' to equal '%v' or '%v'", actual, expected1, expected2)
 	}
@@ -40,10 +37,7 @@ func TestGame_getRandomPhrase_MultiReplace(t *testing.T) {
 	})
 
 	dying := &discordgo.User{Username: "dying user"}
-	living := []*discordgo.User{
-		{ID: "1"},
-		{ID: "2"},
-	}
+	living := []string{"Player 1", "Player 2"}
 
 	s := &BufferSender{}
 	s.Start()
@@ -51,8 +45,8 @@ func TestGame_getRandomPhrase_MultiReplace(t *testing.T) {
 
 	actual := NewGame(GameConfig{Sender: s}).getRandomPhrase(dying, living)
 	dyingMention := fmt.Sprintf("<@%v>", dying.ID)
-	expected1 := fmt.Sprintf(phrase, living[0].Username, dyingMention, dyingMention, living[0].Username)
-	expected2 := fmt.Sprintf(phrase, living[1].Username, dyingMention, dyingMention, living[1].Username)
+	expected1 := fmt.Sprintf(phrase, living[0], dyingMention, dyingMention, living[0])
+	expected2 := fmt.Sprintf(phrase, living[1], dyingMention, dyingMention, living[1])
 	if actual != expected1 && actual != expected2 {
 		t.Errorf("expected '%v' to equal '%v' or '%v'", actual, expected1, expected2)
 	}

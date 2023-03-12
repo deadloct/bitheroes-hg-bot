@@ -36,12 +36,17 @@ type Game struct {
 	introMessage *discordgo.Message
 	sendCh       chan string
 	state        GameState
+	users        []*discordgo.User
+	userMap      map[string]*discordgo.User
 
 	sync.Mutex
 }
 
 func NewGame(cfg GameConfig) *Game {
-	return &Game{GameConfig: cfg}
+	return &Game{
+		GameConfig: cfg,
+		userMap:    make(map[string]*discordgo.User),
+	}
 }
 
 func (g *Game) Start(ctx context.Context) error {
@@ -88,6 +93,25 @@ func (g *Game) IsRunning() bool {
 	return g.state == Started
 }
 
+func (g *Game) RegisterUser(messageID, emoji string, user *discordgo.User) {
+	if g.HasStarted() {
+		return
+	}
+
+	if emoji != settings.ParticipantEmoji {
+		return
+	}
+
+	if user.Bot {
+		return
+	}
+
+	if _, ok := g.userMap[user.ID]; !ok {
+		g.userMap[user.ID] = user
+		g.users = append(g.users, user)
+	}
+}
+
 func (g *Game) HasEnded() bool {
 	g.Lock()
 	defer g.Unlock()
@@ -127,22 +151,7 @@ func (g *Game) run(ctx context.Context) {
 	g.state = Started
 	g.Unlock()
 
-	// TODO: only retrieves 100, need to get more somehow
-	// TODO: don't directly access session to remove dependency and make testing easier
-	usersWithBot, err := g.Session.MessageReactions(g.introMessage.ChannelID, g.introMessage.ID,
-		settings.ParticipantEmoji, 100, "", "")
-	if err != nil {
-		log.Fatalf("could not retrieve reactions: %v", err)
-	}
-
-	var users []*discordgo.User
-	for _, u := range usersWithBot {
-		if !u.Bot {
-			users = append(users, u)
-		}
-	}
-
-	if len(users) == 0 {
+	if len(g.users) == 0 {
 		g.Sender.Send(fmt.Sprintf("No tributes have come forward within %v. This district will be eliminated.", g.Delay))
 		g.Lock()
 		g.state = Cancelled
@@ -151,18 +160,18 @@ func (g *Game) run(ctx context.Context) {
 	}
 
 	// TODO: Remove this testing code
-	for _, u := range users {
+	for _, u := range g.users {
 		for i := 2; i < 6; i++ {
-			users = append(users, &discordgo.User{
+			g.users = append(g.users, &discordgo.User{
 				Username: fmt.Sprintf("%v-%v", u.Username, i),
 				ID:       u.ID,
 			})
 		}
 	}
 
-	g.sendTributeOutput(users)
+	g.sendTributeOutput(g.users)
 
-	for day := 0; len(users) > 1; day++ {
+	for day := 0; len(g.users) > 1; day++ {
 		time.Sleep(settings.DayDelay)
 
 		select {
@@ -174,8 +183,9 @@ func (g *Game) run(ctx context.Context) {
 			return
 
 		default:
-			log.Debugf("simulating day %v with %v tributes", day, len(users))
-			users, err = g.runDay(ctx, day, users)
+			log.Debugf("simulating day %v with %v tributes", day, len(g.users))
+			var err error
+			g.users, err = g.runDay(ctx, day, g.users)
 			if err != nil {
 				log.Errorf("failed to simulate day %v: %v", day, err)
 				g.Sender.Send(fmt.Sprintf("failed to run game for day %v", day+1))
@@ -185,12 +195,12 @@ func (g *Game) run(ctx context.Context) {
 				return
 			}
 
-			log.Debugf("users left after day %v: %v", day, len(users))
+			log.Debugf("users left after day %v: %v", day, len(g.users))
 		}
 	}
 
 	var mentions []string
-	for _, u := range users {
+	for _, u := range g.users {
 		mentions = append(mentions, fmt.Sprintf("<@%v>", u.ID))
 	}
 
@@ -269,7 +279,7 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 	}
 
 	for i := range dead {
-		output = append(output, g.getRandomPhrase(users[i], living))
+		output = append(output, g.getRandomPhrase(users[i], livingNames))
 	}
 
 	output = append(
@@ -287,12 +297,12 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 	return living, nil
 }
 
-func (g *Game) getRandomPhrase(dying *discordgo.User, alive []*discordgo.User) string {
+func (g *Game) getRandomPhrase(dying *discordgo.User, living []string) string {
 	defaultPhrase := fmt.Sprintf("%v died of dysentery.", dying.Username)
 
 	killer := "another player"
-	if killerNum, err := GetRandomInt(0, len(alive)); err == nil {
-		killer = alive[killerNum].Username
+	if killerNum, err := GetRandomInt(0, len(living)); err == nil {
+		killer = living[killerNum]
 	}
 
 	tmplNum, err := GetRandomInt(0, len(settings.Phrases))

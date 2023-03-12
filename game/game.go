@@ -54,8 +54,9 @@ func (g *Game) Start(ctx context.Context) error {
 
 	// This is the welcome messsage that people react to to enter.
 	intro, err := g.getIntro(settings.IntroValues{
-		User:  g.Author.Username,
-		Delay: g.Delay,
+		Delay:     g.Delay,
+		EmojiCode: settings.ParticipantEmojiCode,
+		User:      g.Author.Username,
 	})
 	if err != nil {
 		return err
@@ -66,7 +67,8 @@ func (g *Game) Start(ctx context.Context) error {
 		return err
 	}
 
-	g.Session.MessageReactionAdd(g.introMessage.ChannelID, g.introMessage.ID, settings.ParticipantEmoji)
+	g.Session.MessageReactionAdd(g.introMessage.ChannelID, g.introMessage.ID,
+		fmt.Sprintf("%v:%v", settings.ParticipantEmojiName, settings.ParticipantEmojiID))
 
 	g.delayedStart(ctx)
 	return nil
@@ -98,7 +100,7 @@ func (g *Game) RegisterUser(messageID, emoji string, user *discordgo.User) {
 		return
 	}
 
-	if emoji != settings.ParticipantEmoji {
+	if emoji != settings.ParticipantEmojiName {
 		return
 	}
 

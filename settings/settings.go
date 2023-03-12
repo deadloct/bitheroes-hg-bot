@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
 	"text/template"
 	"time"
@@ -12,9 +13,6 @@ import (
 )
 
 const (
-	ParticipantEmoji     = "🕊️"
-	ParticipantEmojiName = "dove"
-
 	DefaultStartDelay = 60 * time.Second
 	MinimumStartDelay = 5   // Seconds
 	MaximumStartDelay = 900 // 15 minutes in seconds
@@ -36,11 +34,16 @@ const (
 var (
 	Intro   *template.Template
 	Phrases []*template.Template
+
+	ParticipantEmojiName = os.Getenv("BITHEROES_HG_BOT_EMOJI_NAME")
+	ParticipantEmojiID   = os.Getenv("BITHEROES_HG_BOT_EMOJI_ID")
+	ParticipantEmojiCode = fmt.Sprintf("<:%v:%v>", ParticipantEmojiName, ParticipantEmojiID)
 )
 
 type IntroValues struct {
-	User  string
-	Delay time.Duration
+	Delay     time.Duration
+	EmojiCode string
+	User      string
 }
 
 type PhraseValues struct {

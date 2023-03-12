@@ -195,11 +195,12 @@ func (g *Game) run(ctx context.Context) {
 	}
 
 	log.Debugf("winners: %v", mentions)
+	congrats := ToDoubleStruck("Congratulations to our new victor(s)")
 	g.sendCh <- strings.Join([]string{
 		"> " + settings.DefaultSeparator,
 		"> This year's Hunger Games have concluded.",
 		"> ",
-		fmt.Sprintf("> **Congratulations to our new victor(s), %v!**", strings.Join(mentions, ", ")),
+		fmt.Sprintf("> **%v**, %v!", congrats, strings.Join(mentions, ", ")),
 		"> " + settings.DefaultSeparator,
 	}, "\n")
 
@@ -214,9 +215,9 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 	}
 
 	output := []string{
-		settings.DefaultSeparator,
-		fmt.Sprintf("**𝔹𝕖𝕘𝕚𝕟𝕟𝕚𝕟𝕘 𝔻𝕒𝕪 %v**", day+1),
-		settings.DefaultSeparator,
+		settings.HalfSeparator,
+		ToDoubleStruck(fmt.Sprintf("**Day %v**", day+1)),
+		settings.HalfSeparator,
 		" ",
 	}
 
@@ -318,7 +319,7 @@ func (g *Game) sendTributeOutput(users []*discordgo.User) {
 
 	tributeLines := []string{
 		settings.DefaultSeparator,
-		"Please welcome our brave tributes!",
+		ToDoubleStruck("**Please welcome our brave tributes!**"),
 		settings.DefaultSeparator,
 		"",
 		"What a fantastic group of individuals we have for this year's contest:",

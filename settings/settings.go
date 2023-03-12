@@ -28,6 +28,7 @@ const (
 	DiscordMaxMessageLength = 2000
 
 	DefaultSeparator = "_,.-'~'-.,__,.-'~'-.,_"
+	HalfSeparator    = "_,.-'~'-.,_"
 )
 
 var (

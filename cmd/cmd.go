@@ -11,12 +11,13 @@ import (
 )
 
 const (
-	CommandPrefix          = "hg-"
-	CommandHelp            = CommandPrefix + "help"
-	CommandStart           = CommandPrefix + "start"
-	CommandStartOptionWait = "wait"
-	CommandCancel          = CommandPrefix + "cancel"
-	CommandClear           = CommandPrefix + "clear"
+	CommandPrefix                     = "hg-"
+	CommandHelp                       = CommandPrefix + "help"
+	CommandStart                      = CommandPrefix + "start"
+	CommandStartOptionStartDelay      = "start-delay"
+	CommandStartOptionEntryMultiplier = "entry-multiplier"
+	CommandCancel                     = CommandPrefix + "cancel"
+	CommandClear                      = CommandPrefix + "clear"
 )
 
 var commands = []*discordgo.ApplicationCommand{
@@ -29,10 +30,20 @@ var commands = []*discordgo.ApplicationCommand{
 		Description: "Starts a Hunger Games event",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
-				Type:        discordgo.ApplicationCommandOptionInteger,
-				Name:        CommandStartOptionWait,
-				Description: "Seconds to wait for reactions before starting game (Default: 60 seconds)",
-				Required:    false,
+				Type: discordgo.ApplicationCommandOptionInteger,
+				Name: CommandStartOptionStartDelay,
+				Description: fmt.Sprintf(
+					"Seconds to wait for reactions before starting game (Default: %v, Min: %v, Max: %v)",
+					settings.DefaultStartDelay, settings.MinimumStartDelay, settings.MaximumStartDelay),
+				Required: false,
+			},
+			{
+				Type: discordgo.ApplicationCommandOptionInteger,
+				Name: CommandStartOptionEntryMultiplier,
+				Description: fmt.Sprintf(
+					"Number of entries per tribute (Default: %v, Min: %v, Max: %v)",
+					settings.DefaultEntryMultiplier, settings.MinimumEntryMultiplier, settings.MaximumEntryMultiplier),
+				Required: false,
 			},
 		},
 	},
@@ -115,11 +126,12 @@ func CommandHandler(session *discordgo.Session, ic *discordgo.InteractionCreate)
 		session.ChannelMessageSend(ic.ChannelID, "This command is not yet supported. Panem issues our sincerest apologies and politely requests your obedience.")
 
 	case CommandStart:
-		delay := settings.DefaultStartDelay
+		delay := settings.DefaultStartDelay * time.Second
+		entryMultiplier := settings.DefaultEntryMultiplier
 
 		for _, option := range options {
 			switch option.Name {
-			case CommandStartOptionWait:
+			case CommandStartOptionStartDelay:
 				v := int(option.IntValue())
 				switch {
 				case v < settings.MinimumStartDelay:
@@ -133,10 +145,27 @@ func CommandHandler(session *discordgo.Session, ic *discordgo.InteractionCreate)
 				default:
 					delay = time.Duration(v) * time.Second
 				}
+
+			case CommandStartOptionEntryMultiplier:
+				v := int(option.IntValue())
+				switch {
+				case v < settings.MinimumEntryMultiplier:
+					entryMultiplier = settings.MinimumEntryMultiplier
+					msg := fmt.Sprintf("The multiplier of %v is much too low. Setting to %v instead.", v, settings.MinimumEntryMultiplier)
+					session.ChannelMessageSend(ic.ChannelID, msg)
+					log.Warn(msg)
+				case v > settings.MaximumEntryMultiplier:
+					entryMultiplier = settings.MaximumEntryMultiplier
+					msg := fmt.Sprintf("The multiplier of %v is much too high. Setting to %v instead.", v, settings.MaximumEntryMultiplier)
+					session.ChannelMessageSend(ic.ChannelID, msg)
+					log.Warn(msg)
+				default:
+					entryMultiplier = v
+				}
 			}
 		}
 
-		if err := game.ManagerInstance(session).StartGame(ic.ChannelID, delay, ic.Member.User); err != nil {
+		if err := game.ManagerInstance(session).StartGame(ic.ChannelID, delay, entryMultiplier, ic.Member.User); err != nil {
 			log.Errorf("error starting game: %v", err)
 		}
 

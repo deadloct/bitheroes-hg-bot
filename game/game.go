@@ -24,28 +24,31 @@ const (
 )
 
 type GameConfig struct {
-	Author  *discordgo.User
-	Delay   time.Duration // delayed start
-	Sender  Sender
-	Session *discordgo.Session
+	Author          *discordgo.User
+	Delay           time.Duration // delayed start
+	EntryMultiplier int
+	Sender          Sender
+	Session         *discordgo.Session
 }
 
 type Game struct {
 	GameConfig
 
-	introMessage *discordgo.Message
-	sendCh       chan string
-	state        GameState
-	users        []*discordgo.User
-	userMap      map[string]*discordgo.User
+	introMessage  *discordgo.Message
+	sendCh        chan string
+	state         GameState
+	phraseIndexes []int
+	users         []*discordgo.User
+	userMap       map[string]*discordgo.User
 
 	sync.Mutex
 }
 
 func NewGame(cfg GameConfig) *Game {
 	return &Game{
-		GameConfig: cfg,
-		userMap:    make(map[string]*discordgo.User),
+		GameConfig:    cfg,
+		userMap:       make(map[string]*discordgo.User),
+		phraseIndexes: GenerateSequence(len(settings.Phrases)),
 	}
 }
 
@@ -161,20 +164,21 @@ func (g *Game) run(ctx context.Context) {
 		return
 	}
 
-	// TODO: Remove this testing code
-	for _, u := range g.users {
-		for i := 2; i < 6; i++ {
-			g.users = append(g.users, &discordgo.User{
-				Username: fmt.Sprintf("%v-%v", u.Username, i),
-				ID:       u.ID,
-			})
+	if g.EntryMultiplier > 1 {
+		for _, u := range g.users {
+			for i := 2; i <= g.EntryMultiplier; i++ {
+				g.users = append(g.users, &discordgo.User{
+					Username: fmt.Sprintf("%v-%v", u.Username, i),
+					ID:       u.ID,
+				})
+			}
 		}
 	}
 
 	g.sendTributeOutput(g.users)
 
 	for day := 0; len(g.users) > 1; day++ {
-		time.Sleep(settings.DayDelay)
+		time.Sleep(settings.DefaultDayDelay)
 
 		select {
 		case <-ctx.Done():
@@ -307,20 +311,32 @@ func (g *Game) getRandomPhrase(dying *discordgo.User, living []string) string {
 		killer = living[killerNum]
 	}
 
-	tmplNum, err := GetRandomInt(0, len(settings.Phrases))
+	i, err := GetRandomInt(0, len(g.phraseIndexes))
 	if err != nil {
 		log.Errorf("could not retrieve random int for picking a phrase: %v", err)
 		return defaultPhrase
 	}
 
+	dyingName := fmt.Sprintf("<@%v>", dying.ID)
+	if g.EntryMultiplier > 1 {
+		dyingName = dying.Username
+	}
+
+	var result bytes.Buffer
+	tmpl := settings.Phrases[g.phraseIndexes[i]]
 	vals := settings.PhraseValues{
 		Killer: killer,
-		Dying:  fmt.Sprintf("<@%v>", dying.ID),
+		Dying:  dyingName,
 	}
-	var result bytes.Buffer
-	if err := settings.Phrases[tmplNum].Execute(&result, vals); err != nil {
+	if err := tmpl.Execute(&result, vals); err != nil {
 		log.Errorf("error executing template with vals: %v", err)
 		return defaultPhrase
+	}
+
+	if len(g.phraseIndexes) == 1 {
+		g.phraseIndexes = GenerateSequence(len(settings.Phrases))
+	} else {
+		g.phraseIndexes = append(g.phraseIndexes[:i], g.phraseIndexes[i+1:]...)
 	}
 
 	return result.String()

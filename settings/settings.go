@@ -13,11 +13,16 @@ import (
 )
 
 const (
-	DefaultStartDelay = 60 * time.Second
-	MinimumStartDelay = 5   // Seconds
+	// Seconds
+	DefaultStartDelay = 60
+	MinimumStartDelay = 5
 	MaximumStartDelay = 900 // 15 minutes in seconds
 
-	DayDelay = 5 * time.Second
+	DefaultEntryMultiplier = 1
+	MinimumEntryMultiplier = 1
+	MaximumEntryMultiplier = 100
+
+	DefaultDayDelay = 5 * time.Second
 
 	DataLocation = "data"
 	PhrasesFile  = "phrases.en.json"

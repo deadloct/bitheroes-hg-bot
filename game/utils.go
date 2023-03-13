@@ -71,6 +71,15 @@ var DoubleStruckMap = map[rune]rune{
 	'0': '𝟘',
 }
 
+func GenerateSequence(n int) []int {
+	nums := make([]int, n)
+	for i := 0; i < n; i++ {
+		nums[i] = i
+	}
+
+	return nums
+}
+
 func GetRandomInt(min, max int) (int, error) {
 	bg := big.NewInt(int64(max - min))
 	n, err := rand.Int(rand.Reader, bg)

@@ -285,7 +285,9 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 	}
 
 	for i := range dead {
-		output = append(output, g.getRandomPhrase(users[i], livingNames))
+		line := g.getRandomPhrase(users[i], livingNames)
+		log.Debugf("Day %v line %v: %v", day, i, line)
+		output = append(output, line)
 	}
 
 	output = append(
@@ -319,7 +321,7 @@ func (g *Game) getRandomPhrase(dying *discordgo.User, living []string) string {
 
 	dyingName := fmt.Sprintf("<@%v>", dying.ID)
 	if g.EntryMultiplier > 1 {
-		dyingName = dying.Username
+		dyingName = fmt.Sprintf("**%v**", dying.Username)
 	}
 
 	var result bytes.Buffer

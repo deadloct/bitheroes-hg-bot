@@ -168,8 +168,9 @@ func (g *Game) run(ctx context.Context) {
 		for _, u := range g.users {
 			for i := 2; i <= g.EntryMultiplier; i++ {
 				g.users = append(g.users, &discordgo.User{
-					Username: fmt.Sprintf("%v-%v", u.Username, i),
-					ID:       u.ID,
+					Username:      fmt.Sprintf("%v-%v", u.Username, i),
+					ID:            u.ID,
+					Discriminator: u.Discriminator,
 				})
 			}
 		}
@@ -208,6 +209,7 @@ func (g *Game) run(ctx context.Context) {
 	var mentions []string
 	for _, u := range g.users {
 		mentions = append(mentions, fmt.Sprintf("<@%v>", u.ID))
+		log.Debugf("winner: %v#%v (%v)", u.Username, u.Discriminator, u.ID)
 	}
 
 	log.Debugf("winners: %v", mentions)
@@ -285,8 +287,8 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 	}
 
 	for i := range dead {
-		line := g.getRandomPhrase(users[i], livingNames)
-		log.Debugf("Day %v line %v: %v", day, i, line)
+		line := "• " + g.getRandomPhrase(users[i], livingNames)
+		log.Debugf("Day %v: %v", day, line)
 		output = append(output, line)
 	}
 

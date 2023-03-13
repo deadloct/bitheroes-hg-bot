@@ -135,11 +135,11 @@ func CommandHandler(session *discordgo.Session, ic *discordgo.InteractionCreate)
 				v := int(option.IntValue())
 				switch {
 				case v < settings.MinimumStartDelay:
-					msg := fmt.Sprintf("The delay of %v is much too short. Hunger Games will wait for %v instead.", v, settings.DefaultStartDelay)
+					msg := fmt.Sprintf("The delay of %v is much too short. Hunger Games will wait for %v seconds instead.", v, settings.DefaultStartDelay)
 					session.ChannelMessageSend(ic.ChannelID, msg)
 					log.Warn(msg)
 				case v > settings.MaximumStartDelay:
-					msg := fmt.Sprintf("The delay of %v is much too long. Hunger Games will wait for %v instead.", v, settings.DefaultStartDelay)
+					msg := fmt.Sprintf("The delay of %v is much too long. Hunger Games will wait for %v seconds instead.", v, settings.DefaultStartDelay)
 					session.ChannelMessageSend(ic.ChannelID, msg)
 					log.Warn(msg)
 				default:

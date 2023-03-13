@@ -294,7 +294,7 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 
 	output = append(
 		output,
-		"",
+		settings.DefaultSeparator,
 		fmt.Sprintf("**Players remaining at the end of day %v:** %v", day+1, strings.Join(livingNames, ", ")),
 	)
 

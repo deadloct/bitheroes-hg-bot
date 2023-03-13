@@ -27,6 +27,7 @@ const (
 	DataLocation = "data"
 	PhrasesFile  = "phrases.en.json"
 	IntroFile    = "intro.template"
+	HelpFile     = "help.en.template"
 
 	DiscordMaxMessageLength = 2000
 	DiscordMaxMessages      = 100
@@ -38,6 +39,7 @@ const (
 
 var (
 	Intro   *template.Template
+	Help    string // not currently a template
 	Phrases []*template.Template
 
 	ParticipantEmojiName = os.Getenv("BITHEROES_HG_BOT_EMOJI_NAME")
@@ -58,6 +60,7 @@ type PhraseValues struct {
 
 func ImportData() {
 	importIntro()
+	importHelp()
 	importPhrases()
 }
 
@@ -75,6 +78,17 @@ func importIntro() {
 	}
 
 	log.Info("imported intro template")
+}
+
+func importHelp() {
+	helpPath := path.Join(DataLocation, HelpFile)
+	v, err := ioutil.ReadFile(helpPath)
+	if err != nil {
+		log.Panicf("unable to open help file %v: %v", helpPath, err)
+	}
+
+	Help = string(v[:])
+	log.Info("imported help file")
 }
 
 func importPhrases() {

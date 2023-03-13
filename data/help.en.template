@@ -1,0 +1,29 @@
+This bot is a remake of Shadown's original Bit Heroes Hunger Games bot. Interact with this bot using Discord's slash commands (<https://support.discord.com/hc/en-us/articles/1500000368501-Slash-Commands-FAQ>). To use it, type `/` to bring up the Discord slash commands menu and then choose one of the following options:
+
+**=========**
+**/hg-start**
+**=========**
+Starts a new Hunger Games event. There can only be one active game per channel. If there is already an active game in this channel, this command will cancel that game if it is waiting for reactions, or fail if that game has already started.
+
+This command has two parameters:
+
+• `start-delay`: The number of **seconds** to wait for reactions until starting the game. Default: 60, Minimum: 5, Maximum: 900 (15 min).
+
+• `entry-multiplier`: Enter each participant this many times. Disables mentions on deaths to prevent notification spam. Default: 1, Minimum: 1, Maximum: 100.
+
+**=========**
+**/hg-clear**
+**=========**
+Removes **all** bot messages in the current channel. This includes the current game, older games, help messages, and everything else that the bot has created.
+
+**==========**
+**/hg-cancel**
+**==========**
+Cancels the current active game. See `/hg-start` above, which also cancels the existing game in certain situations.
+
+**========**
+**/hg-help**
+**========**
+Shows this message.
+
+Thanks to everybody that has contibute messages to this bot. To submit more, please contact BillyIdol. Thanks!

@@ -123,7 +123,7 @@ func CommandHandler(session *discordgo.Session, ic *discordgo.InteractionCreate)
 	v := ic.ApplicationCommandData().Name
 	switch v {
 	case CommandHelp:
-		session.ChannelMessageSend(ic.ChannelID, "This command is not yet supported. Panem issues our sincerest apologies and politely requests your obedience.")
+		session.ChannelMessageSend(ic.ChannelID, settings.Help)
 
 	case CommandStart:
 		delay := settings.DefaultStartDelay * time.Second

@@ -121,7 +121,7 @@ func (m *Manager) CanStart(channel string) bool {
 func (m *Manager) RetrieveBotMessagesInChannel(channelID, lastMessageID string, messages []string) ([]string, error) {
 	new, err := m.session.ChannelMessages(channelID, settings.DiscordMaxMessages, lastMessageID, "", "")
 	if err != nil {
-		log.Error("could not retrieve messages: %v", err)
+		log.Errorf("could not retrieve messages: %v", err)
 		return nil, err
 	}
 

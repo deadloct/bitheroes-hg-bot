@@ -26,10 +26,9 @@ const (
 	DefaultVictorCount = 1
 	MinimumVictorCount = 0
 
-	DataLocation = "data"
-	PhrasesFile  = "phrases.en.json"
-	IntroFile    = "intro.template"
-	HelpFile     = "help.en.template"
+	PhrasesFile = "phrases.en.json"
+	IntroFile   = "intro.template"
+	HelpFile    = "help.en.template"
 
 	DiscordMaxMessageLength = 2000
 	DiscordMaxMessages      = 100
@@ -44,6 +43,7 @@ var (
 	Help    string // not currently a template
 	Phrases []*template.Template
 
+	DataLocation         = "data"
 	ParticipantEmojiName = os.Getenv("BITHEROES_HG_BOT_EMOJI_NAME")
 	ParticipantEmojiID   = os.Getenv("BITHEROES_HG_BOT_EMOJI_ID")
 	ParticipantEmojiCode = fmt.Sprintf("<:%v:%v>", ParticipantEmojiName, ParticipantEmojiID)

@@ -8,6 +8,9 @@ LOCAL_PATH := bin
 clean:
 	rm -rf $(LOCAL_PATH)
 
+test:
+	go test ./... -test.v
+
 build: clean
 	go build -o $(LOCAL_PATH)/$(NAME)
 	cp -R data $(LOCAL_PATH)/

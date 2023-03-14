@@ -1,7 +1,11 @@
 package game
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/bwmarrin/discordgo"
+	"github.com/deadloct/bitheroes-hg-bot/settings"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -48,6 +52,48 @@ func (s *DiscordSender) listen() {
 }
 
 func (s *DiscordSender) Send(str string) (*discordgo.Message, error) {
+	if len(str) <= settings.DiscordMaxMessageLength {
+		return s.send(str)
+	}
+
+	var lineStart string
+	if strings.HasPrefix(str, "> ") {
+		lineStart = "> "
+	}
+
+	words := strings.Fields(str)
+	var (
+		line string
+		msg  *discordgo.Message
+		err  error
+	)
+
+	for _, word := range words {
+		separator := " "
+
+		// Space character between line and word is why this uses >= instead of >
+		if len(line)+len(word) >= settings.DiscordMaxMessageLength {
+			if msg, err = s.send(line); err != nil {
+				return nil, err
+			}
+
+			line = ""
+			separator = lineStart
+		}
+
+		line = fmt.Sprintf("%s%s%s", line, separator, word)
+	}
+
+	if len(line) > 0 {
+		if msg, err = s.send(line); err != nil {
+			return nil, err
+		}
+	}
+
+	return msg, nil
+}
+
+func (s *DiscordSender) send(str string) (*discordgo.Message, error) {
 	log.Debugf("sending message of length %v", len(str))
 	msg, err := s.session.ChannelMessageSend(s.channelID, str)
 	if err != nil {

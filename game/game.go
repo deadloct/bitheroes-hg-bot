@@ -29,6 +29,7 @@ type GameConfig struct {
 	EntryMultiplier int
 	Sender          Sender
 	Session         *discordgo.Session
+	VictorCount     int
 }
 
 type Game struct {
@@ -57,9 +58,10 @@ func (g *Game) Start(ctx context.Context) error {
 
 	// This is the welcome messsage that people react to to enter.
 	intro, err := g.getIntro(settings.IntroValues{
-		Delay:     g.Delay,
-		EmojiCode: settings.ParticipantEmojiCode,
-		User:      g.Author.Username,
+		Delay:       g.Delay,
+		EmojiCode:   settings.ParticipantEmojiCode,
+		User:        g.Author.Username,
+		VictorCount: g.VictorCount,
 	})
 	if err != nil {
 		return err
@@ -178,7 +180,7 @@ func (g *Game) run(ctx context.Context) {
 
 	g.sendTributeOutput(g.users)
 
-	for day := 0; len(g.users) > 1; day++ {
+	for day := 0; len(g.users) > g.VictorCount; day++ {
 		time.Sleep(settings.DefaultDayDelay)
 
 		select {
@@ -212,15 +214,13 @@ func (g *Game) run(ctx context.Context) {
 		log.Debugf("winner: %v#%v (%v)", u.Username, u.Discriminator, u.ID)
 	}
 
-	log.Debugf("winners: %v", mentions)
 	congrats := ToDoubleStruck("Congratulations to our new victor(s)")
-	g.sendCh <- strings.Join([]string{
-		"> " + settings.DefaultSeparator,
-		"> This year's Hunger Games have concluded.",
-		"> ",
-		fmt.Sprintf("> **%v**, %v!", congrats, strings.Join(mentions, ", ")),
-		"> " + settings.DefaultSeparator,
-	}, "\n")
+	g.sendBatchOutput([]string{
+		settings.DefaultSeparator,
+		"This year's Hunger Games have concluded.",
+		fmt.Sprintf("**%v**: %v", congrats, strings.Join(mentions, ", ")),
+		settings.DefaultSeparator,
+	})
 
 	g.Lock()
 	g.state = Finished
@@ -241,12 +241,12 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 
 	// min and max are 0-based
 	var min int
-	max := len(users) // right is exclusive, so this is really `len(users) - 1``
+	max := len(users) - g.VictorCount + 1 // right is exclusive, so this is really `len(users) - g.VictorCount``
 
 	// 1/2 - 3/4 on the first day, it's always a slaughter
-	if day == 0 {
-		min = len(users) / 2
-		max = len(users) * 3 / 4
+	if day == 0 && len(users) > 5 {
+		min = max / 2
+		max = max * 3 / 4
 	}
 
 	killCount, err := GetRandomInt(min, max)
@@ -257,7 +257,7 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 
 	if killCount == 0 {
 		output = append(output, fmt.Sprintf("**All was quiet on day %v.**", day+1))
-		g.sendDayOutput(output)
+		g.sendBatchOutput(output)
 		return users, nil
 	}
 
@@ -295,13 +295,13 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 	output = append(
 		output,
 		settings.DefaultSeparator,
-		fmt.Sprintf("**Players remaining at the end of day %v:** %v", day+1, strings.Join(livingNames, ", ")),
+		fmt.Sprintf("**%v player(s) remain at the end of day %v:** %v", len(living), day+1, strings.Join(livingNames, ", ")),
 	)
 
 	select {
 	case <-ctx.Done():
 	default:
-		g.sendDayOutput(output)
+		g.sendBatchOutput(output)
 	}
 
 	return living, nil
@@ -362,21 +362,21 @@ func (g *Game) sendTributeOutput(users []*discordgo.User) {
 	}
 
 	tributeLines = append(tributeLines, strings.Join(tributes, ", "), "", settings.DefaultSeparator)
-	g.sendDayOutput(tributeLines)
+	g.sendBatchOutput(tributeLines)
 }
 
-func (g *Game) sendDayOutput(lines []string) {
+func (g *Game) sendBatchOutput(lines []string) {
 	var output string
 
 	for _, line := range lines {
-		next := fmt.Sprintf("\n> %v", line)
+		next := fmt.Sprintf("> %v", line)
 
 		if len(output)+len(next) > settings.DiscordMaxMessageLength {
 			g.sendCh <- output
 			output = ""
 		}
 
-		output += next
+		output += next + "\n"
 	}
 
 	if len(output) > 0 {

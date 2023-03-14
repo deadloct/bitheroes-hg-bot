@@ -2,6 +2,7 @@ package game
 
 import (
 	"crypto/rand"
+	"fmt"
 	"math/big"
 	"strings"
 )
@@ -81,6 +82,10 @@ func GenerateSequence(n int) []int {
 }
 
 func GetRandomInt(min, max int) (int, error) {
+	if max-min <= 0 {
+		return 0, fmt.Errorf("tried to get random int between [0, %v)", max-min)
+	}
+
 	bg := big.NewInt(int64(max - min))
 	n, err := rand.Int(rand.Reader, bg)
 	if err != nil {

@@ -4,6 +4,6 @@
 > 
 > Citizens of Panem, beloved {{.User}} has sponsored a new Hunger Games event. React to this message with {{.EmojiCode}} within the next {{.Delay}} to participate.
 >  
-> Only one tribute will be declared this year's victor. May the odds be ever in your favor!
+> {{.VictorCount}} tribute(s) will be declared this year's victor(s). May the odds be ever in your favor!
 > 
 > _,.-'~'-.,__,.-'~'-.,_

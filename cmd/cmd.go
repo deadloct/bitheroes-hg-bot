@@ -16,6 +16,7 @@ const (
 	CommandStart                      = CommandPrefix + "start"
 	CommandStartOptionStartDelay      = "start-delay"
 	CommandStartOptionEntryMultiplier = "entry-multiplier"
+	CommandStartOptionVictorCount     = "victors"
 	CommandCancel                     = CommandPrefix + "cancel"
 	CommandClear                      = CommandPrefix + "clear"
 )
@@ -35,6 +36,14 @@ var commands = []*discordgo.ApplicationCommand{
 				Description: fmt.Sprintf(
 					"Seconds to wait for reactions before starting game (Default: %v, Min: %v, Max: %v)",
 					settings.DefaultStartDelay, settings.MinimumStartDelay, settings.MaximumStartDelay),
+				Required: false,
+			},
+			{
+				Type: discordgo.ApplicationCommandOptionInteger,
+				Name: CommandStartOptionVictorCount,
+				Description: fmt.Sprintf(
+					"Number of victors (winners) (Default: %v, Min: %v)",
+					settings.DefaultVictorCount, settings.DefaultVictorCount),
 				Required: false,
 			},
 			{
@@ -128,6 +137,7 @@ func CommandHandler(session *discordgo.Session, ic *discordgo.InteractionCreate)
 	case CommandStart:
 		delay := settings.DefaultStartDelay * time.Second
 		entryMultiplier := settings.DefaultEntryMultiplier
+		victors := settings.DefaultVictorCount
 
 		for _, option := range options {
 			switch option.Name {
@@ -162,10 +172,27 @@ func CommandHandler(session *discordgo.Session, ic *discordgo.InteractionCreate)
 				default:
 					entryMultiplier = v
 				}
+
+			case CommandStartOptionVictorCount:
+				v := int(option.IntValue())
+				switch {
+				case v < settings.MinimumVictorCount:
+					victors = settings.DefaultVictorCount
+					msg := fmt.Sprintf("Victors of %v is much too low. Setting to %v instead.", v, settings.DefaultVictorCount)
+					session.ChannelMessageSend(ic.ChannelID, msg)
+					log.Warn(msg)
+				default:
+					victors = v
+				}
 			}
 		}
 
-		if err := game.ManagerInstance(session).StartGame(ic.ChannelID, delay, entryMultiplier, ic.Member.User); err != nil {
+		if victors == 0 {
+			session.ChannelMessageSend(ic.ChannelID, "There will be no victors this year. An uprising broke out in the underground Bit Heroes sector, but rest easy knowing that the dissidents of the uprising will be eliminated.")
+			return
+		}
+
+		if err := game.ManagerInstance(session).StartGame(ic.ChannelID, delay, entryMultiplier, victors, ic.Member.User); err != nil {
 			log.Errorf("error starting game: %v", err)
 		}
 

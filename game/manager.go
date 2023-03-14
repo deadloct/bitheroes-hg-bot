@@ -38,7 +38,7 @@ func ManagerInstance(session *discordgo.Session) *Manager {
 	return managerSingleton
 }
 
-func (m *Manager) StartGame(channel string, delay time.Duration, entryMultiplier int, author *discordgo.User) error {
+func (m *Manager) StartGame(channel string, delay time.Duration, entryMultiplier int, victorCount int, author *discordgo.User) error {
 	sender := NewDiscordSender(m.session, channel)
 	sender.Start()
 
@@ -60,6 +60,7 @@ func (m *Manager) StartGame(channel string, delay time.Duration, entryMultiplier
 		EntryMultiplier: entryMultiplier,
 		Sender:          sender,
 		Session:         m.session,
+		VictorCount:     victorCount,
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())

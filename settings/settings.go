@@ -22,7 +22,9 @@ const (
 	MinimumEntryMultiplier = 1
 	MaximumEntryMultiplier = 100
 
-	DefaultDayDelay = 5 * time.Second
+	DefaultDayDelay    = 5 * time.Second
+	DefaultVictorCount = 1
+	MinimumVictorCount = 0
 
 	DataLocation = "data"
 	PhrasesFile  = "phrases.en.json"
@@ -48,9 +50,10 @@ var (
 )
 
 type IntroValues struct {
-	Delay     time.Duration
-	EmojiCode string
-	User      string
+	Delay       time.Duration
+	EmojiCode   string
+	User        string
+	VictorCount int
 }
 
 type PhraseValues struct {

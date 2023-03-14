@@ -5,9 +5,11 @@ This bot is a remake of Shadown's original Bit Heroes Hunger Games bot. Interact
 **=========**
 Starts a new Hunger Games event. There can only be one active game per channel. If there is already an active game in this channel, this command will cancel that game if it is waiting for reactions, or fail if that game has already started.
 
-This command has two parameters:
+This command has the following optional parameters:
 
 • `start-delay`: The number of **seconds** to wait for reactions until starting the game. Default: 60, Minimum: 5, Maximum: 900 (15 min).
+
+• `victors`: The number of winners. Default: 1, Minimum: 1, Maximum: anything, although it will be the number of people who enter.
 
 • `entry-multiplier`: Enter each participant this many times. Disables mentions on deaths to prevent notification spam. Default: 1, Minimum: 1, Maximum: 100.
 

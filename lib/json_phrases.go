@@ -91,8 +91,6 @@ func (jp *JSONPhrases) importJSON(data []byte) {
 	if len(jp.templates) == 0 {
 		log.Panicf("no phrase templates were parsed")
 	}
-
-	log.Infof("imported %v phrases", len(jp.templates))
 }
 
 func (jp *JSONPhrases) generateTemplateIndexes() {

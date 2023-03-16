@@ -9,7 +9,12 @@ clean:
 	rm -rf $(LOCAL_PATH)
 
 test:
-	go test ./... -test.v
+	go test ./... -test.v -race
+
+bench:
+	go test -bench=. -benchtime=20x -benchmem ./... | tee bench-new.txt
+	benchstat bench-old.txt bench-new.txt
+	mv bench-new.txt bench-old.txt
 
 build: clean
 	go build -o $(LOCAL_PATH)/$(NAME)

@@ -4,3 +4,5 @@ __debug_bin
 bin
 discord-guide-bot
 k8s/secret.yaml
+bench-old.txt
+bench-new.txt

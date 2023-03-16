@@ -41,6 +41,18 @@ Run tests using make:
 make test
 ```
 
+The benchmark tests require the benchstat program to compare old and new results:
+
+```bash
+go install golang.org/x/perf/cmd/benchstat@latest
+```
+
+Then run the tests:
+
+```bash
+make bench
+```
+
 ## Adding New Phrases
 
 The death phrases are imported from `data/phrases.en.json` file and can use the following tokens:

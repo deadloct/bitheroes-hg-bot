@@ -201,12 +201,15 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 			return
 		}
 
+		jp := lib.NewJSONPhrases(m.jsonData)
+		log.Infof("imported %v phrases", jp.PhraseCount())
+
 		cfg := game.GameStartConfig{
 			Author:          ic.Member.User,
 			Channel:         ic.ChannelID,
 			Delay:           delay,
 			EntryMultiplier: entryMultiplier,
-			PhraseGenerator: lib.NewJSONPhrases(m.jsonData),
+			PhraseGenerator: jp,
 			VictorCount:     victors,
 		}
 

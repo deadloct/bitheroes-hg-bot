@@ -30,6 +30,7 @@ type PhraseGenerator interface {
 
 type GameConfig struct {
 	Author          *discordgo.User
+	DayDelay        time.Duration
 	Delay           time.Duration // delayed start
 	EntryMultiplier int
 	PhraseGenerator PhraseGenerator
@@ -51,6 +52,10 @@ type Game struct {
 }
 
 func NewGame(cfg GameConfig) *Game {
+	if cfg.DayDelay == 0 {
+		cfg.DayDelay = settings.DefaultDayDelay
+	}
+
 	return &Game{
 		GameConfig: cfg,
 		userMap:    make(map[string]*discordgo.User),
@@ -171,7 +176,7 @@ func (g *Game) run(ctx context.Context) {
 	g.sendTributeOutput(g.users)
 
 	for day := 0; len(g.users) > g.VictorCount; day++ {
-		time.Sleep(settings.DefaultDayDelay)
+		time.Sleep(g.DayDelay)
 
 		select {
 		case <-ctx.Done():

@@ -21,7 +21,8 @@ export BITHEROES_HG_BOT_EMOJI_ID=
 You'll need to create an application, and then a bot under that application, on the Discord developer site. Enter the new bot's authorization token after the `BITHEROES_HG_BOT_AUTH_TOKEN=` line above.
 
 Next you'll need to set the emoji name and ID equal to the reaction emoji that you'd like to use for the bot. 
-* The emoji name is easy to find, just hover above it after it's been sent to a channel.
+
+* The emoji name is easy to find, just hover above the emoji after it's been sent to a channel and use the part between the colons. For example for `:hungergames:` use `hungergames`.
 * To find the ID, right click on the emoji in a channel and select Copy Link. Use the webp file name without the extension as the ID. For example for the URL `https://cdn.discordapp.com/emojis/1084494508248543383.webp?size=96&quality=lossless` use `1084494508248543383`.
 
 Afterward start the bot by running:

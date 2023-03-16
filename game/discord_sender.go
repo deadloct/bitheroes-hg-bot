@@ -37,6 +37,7 @@ func (s *DiscordSender) Start() chan string {
 }
 
 func (s *DiscordSender) Stop() {
+	close(s.sendCh)
 	close(s.stopCh)
 }
 
@@ -44,7 +45,9 @@ func (s *DiscordSender) listen() {
 	for {
 		select {
 		case str := <-s.sendCh:
-			s.Send(str)
+			if str != "" {
+				s.Send(str)
+			}
 		case <-s.stopCh:
 			return
 		}

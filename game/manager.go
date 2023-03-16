@@ -113,6 +113,7 @@ func (m *Manager) EndGame(channel string) {
 	if rg, exists := m.games[channel]; exists {
 		log.Infof("ending game in channel %v", channel)
 		rg.Cancel()
+		rg.Game.Sender.Stop()
 		delete(m.games, channel)
 	}
 }

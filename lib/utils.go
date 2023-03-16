@@ -1,4 +1,4 @@
-package game
+package lib
 
 import (
 	"crypto/rand"
@@ -70,15 +70,6 @@ var DoubleStruckMap = map[rune]rune{
 	'8': '𝟠',
 	'9': '𝟡',
 	'0': '𝟘',
-}
-
-func GenerateSequence(n int) []int {
-	nums := make([]int, n)
-	for i := 0; i < n; i++ {
-		nums[i] = i
-	}
-
-	return nums
 }
 
 func GetRandomInt(min, max int) (int, error) {

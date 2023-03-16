@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"os/signal"
+	"path"
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
@@ -25,19 +26,25 @@ func main() {
 		log.Panic(err)
 	}
 
+	data, err := os.ReadFile(path.Join(settings.DataLocation, settings.PhrasesFile))
+	if err != nil {
+		log.Panic(err)
+	}
+	commandManager := cmd.NewManager(data)
+
 	// Listen for server messages only
 	session.Identify.Intents = discordgo.IntentGuildMessages | discordgo.IntentGuildMessageReactions | discordgo.IntentMessageContent
-	session.AddHandler(cmd.CommandHandler)
+	session.AddHandler(commandManager.CommandHandler)
 	session.AddHandler(game.ManagerInstance(session).ReactionHandler)
 	if err := session.Open(); err != nil {
 		log.Panic(err)
 	}
 
-	err = cmd.RegisterCommands(session)
+	err = commandManager.RegisterCommands(session)
 	if err != nil {
 		log.Panicf("error registering slash commands: %v", err)
 	}
-	defer cmd.DeregisterCommmands(session)
+	defer commandManager.DeregisterCommmands(session)
 
 	log.Info("Bot is now running. Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)

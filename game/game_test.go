@@ -1,70 +1,10 @@
 package game
 
 import (
-	"fmt"
 	"sync"
-	"testing"
-	"text/template"
-
-	"github.com/deadloct/bitheroes-hg-bot/settings"
 
 	"github.com/bwmarrin/discordgo"
 )
-
-func TestGame_getRandomPhrase_SingleReplace(t *testing.T) {
-	testSetupPhrases(t, []string{"{{.Dying}} killed by {{.Killer}}"})
-
-	dying := &discordgo.User{Username: "dying user"}
-	living := []string{"Player 1", "Player 2"}
-
-	s := &BufferSender{}
-	s.Start()
-	defer s.Stop()
-
-	actual := NewGame(GameConfig{Sender: s}).getRandomPhrase(dying, living)
-	dyingMention := fmt.Sprintf("<@%v>", dying.ID)
-	expected1 := fmt.Sprintf("%v killed by %v", dyingMention, living[0])
-	expected2 := fmt.Sprintf("%v killed by %v", dyingMention, living[1])
-	if actual != expected1 && actual != expected2 {
-		t.Errorf("expected '%v' to equal '%v' or '%v'", actual, expected1, expected2)
-	}
-}
-
-func TestGame_getRandomPhrase_MultiReplace(t *testing.T) {
-	phrase := "%s gave %s a poison flower, and %s said thanks while %s laughed"
-	testSetupPhrases(t, []string{
-		fmt.Sprintf(phrase, "{{.Killer}}", "{{.Dying}}", "{{.Dying}}", "{{.Killer}}"),
-	})
-
-	dying := &discordgo.User{Username: "dying user"}
-	living := []string{"Player 1", "Player 2"}
-
-	s := &BufferSender{}
-	s.Start()
-	defer s.Stop()
-
-	actual := NewGame(GameConfig{Sender: s}).getRandomPhrase(dying, living)
-	dyingMention := fmt.Sprintf("<@%v>", dying.ID)
-	expected1 := fmt.Sprintf(phrase, living[0], dyingMention, dyingMention, living[0])
-	expected2 := fmt.Sprintf(phrase, living[1], dyingMention, dyingMention, living[1])
-	if actual != expected1 && actual != expected2 {
-		t.Errorf("expected '%v' to equal '%v' or '%v'", actual, expected1, expected2)
-	}
-}
-
-func testSetupPhrases(t *testing.T, testPhrases []string) {
-	t.Helper()
-
-	settings.Phrases = nil
-	for i, phrase := range testPhrases {
-		tmpl, err := template.New(fmt.Sprintf("phrase-%v", i)).Parse(phrase)
-		if err != nil {
-			t.Fatalf("error loading test phrase '%v': %v", phrase, err)
-		}
-
-		settings.Phrases = append(settings.Phrases, tmpl)
-	}
-}
 
 type BufferSender struct {
 	buffer []string

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/deadloct/bitheroes-hg-bot/lib"
 	"github.com/deadloct/bitheroes-hg-bot/settings"
 
 	"github.com/bwmarrin/discordgo"
@@ -23,10 +24,15 @@ const (
 	Cancelled
 )
 
+type PhraseGenerator interface {
+	GetRandomPhrase(user, mention string, alive []string) string
+}
+
 type GameConfig struct {
 	Author          *discordgo.User
 	Delay           time.Duration // delayed start
 	EntryMultiplier int
+	PhraseGenerator PhraseGenerator
 	Sender          Sender
 	Session         *discordgo.Session
 	VictorCount     int
@@ -35,21 +41,19 @@ type GameConfig struct {
 type Game struct {
 	GameConfig
 
-	introMessage  *discordgo.Message
-	sendCh        chan string
-	state         GameState
-	phraseIndexes []int
-	users         []*discordgo.User
-	userMap       map[string]*discordgo.User
+	introMessage *discordgo.Message
+	sendCh       chan string
+	state        GameState
+	users        []*discordgo.User
+	userMap      map[string]*discordgo.User
 
 	sync.Mutex
 }
 
 func NewGame(cfg GameConfig) *Game {
 	return &Game{
-		GameConfig:    cfg,
-		userMap:       make(map[string]*discordgo.User),
-		phraseIndexes: GenerateSequence(len(settings.Phrases)),
+		GameConfig: cfg,
+		userMap:    make(map[string]*discordgo.User),
 	}
 }
 
@@ -77,13 +81,6 @@ func (g *Game) Start(ctx context.Context) error {
 
 	g.delayedStart(ctx)
 	return nil
-}
-
-func (g *Game) GetState() GameState {
-	g.Lock()
-	defer g.Unlock()
-
-	return g.state
 }
 
 func (g *Game) HasStarted() bool {
@@ -117,13 +114,6 @@ func (g *Game) RegisterUser(messageID, emoji string, user *discordgo.User) {
 		g.userMap[user.ID] = user
 		g.users = append(g.users, user)
 	}
-}
-
-func (g *Game) HasEnded() bool {
-	g.Lock()
-	defer g.Unlock()
-
-	return g.state == Finished || g.state == Cancelled
 }
 
 func (g *Game) getIntro(vals settings.IntroValues) (string, error) {
@@ -214,7 +204,7 @@ func (g *Game) run(ctx context.Context) {
 		log.Debugf("winner: %v#%v (%v)", u.Username, u.Discriminator, u.ID)
 	}
 
-	congrats := ToDoubleStruck("Congratulations to our new victor(s)")
+	congrats := lib.ToDoubleStruck("Congratulations to our new victor(s)")
 	g.sendBatchOutput([]string{
 		settings.DefaultSeparator,
 		"This year's Hunger Games have concluded.",
@@ -234,7 +224,7 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 
 	output := []string{
 		settings.HalfSeparator,
-		ToDoubleStruck(fmt.Sprintf("**Day %v**", day+1)),
+		lib.ToDoubleStruck(fmt.Sprintf("**Day %v**", day+1)),
 		settings.HalfSeparator,
 		" ",
 	}
@@ -249,7 +239,7 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 		max = max * 3 / 4
 	}
 
-	killCount, err := GetRandomInt(min, max)
+	killCount, err := lib.GetRandomInt(min, max)
 	if err != nil {
 		log.Errorf("failed to get random number between %v and %v: %v", min, max, err)
 		return nil, err
@@ -264,7 +254,7 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 	dead := make(map[int]struct{})
 	for i := 0; i < killCount; i++ {
 		for {
-			toDie, err := GetRandomInt(0, len(users))
+			toDie, err := lib.GetRandomInt(0, len(users))
 			if err != nil {
 				log.Errorf("failed to get random number between %v and %v: %v", min, max, err)
 				return nil, err
@@ -287,7 +277,12 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 	}
 
 	for i := range dead {
-		line := "• " + g.getRandomPhrase(users[i], livingNames)
+		mention := ""
+		if g.EntryMultiplier == 1 {
+			mention = fmt.Sprintf("<@%v>", users[i].ID)
+		}
+
+		line := "• " + g.PhraseGenerator.GetRandomPhrase(users[i].Username, mention, livingNames)
 		log.Debugf("Day %v: %v", day, line)
 		output = append(output, line)
 	}
@@ -307,51 +302,12 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 	return living, nil
 }
 
-func (g *Game) getRandomPhrase(dying *discordgo.User, living []string) string {
-	defaultPhrase := fmt.Sprintf("%v died of dysentery.", dying.Username)
-
-	killer := "another player"
-	if killerNum, err := GetRandomInt(0, len(living)); err == nil {
-		killer = living[killerNum]
-	}
-
-	i, err := GetRandomInt(0, len(g.phraseIndexes))
-	if err != nil {
-		log.Errorf("could not retrieve random int for picking a phrase: %v", err)
-		return defaultPhrase
-	}
-
-	dyingName := fmt.Sprintf("<@%v>", dying.ID)
-	if g.EntryMultiplier > 1 {
-		dyingName = fmt.Sprintf("**%v**", dying.Username)
-	}
-
-	var result bytes.Buffer
-	tmpl := settings.Phrases[g.phraseIndexes[i]]
-	vals := settings.PhraseValues{
-		Killer: killer,
-		Dying:  dyingName,
-	}
-	if err := tmpl.Execute(&result, vals); err != nil {
-		log.Errorf("error executing template with vals: %v", err)
-		return defaultPhrase
-	}
-
-	if len(g.phraseIndexes) == 1 {
-		g.phraseIndexes = GenerateSequence(len(settings.Phrases))
-	} else {
-		g.phraseIndexes = append(g.phraseIndexes[:i], g.phraseIndexes[i+1:]...)
-	}
-
-	return result.String()
-}
-
 func (g *Game) sendTributeOutput(users []*discordgo.User) {
 	log.Debugf("tribute count: %v", len(users))
 
 	tributeLines := []string{
 		settings.DefaultSeparator,
-		ToDoubleStruck("**Please welcome our brave tributes!**"),
+		lib.ToDoubleStruck("**Please welcome our brave tributes!**"),
 		settings.DefaultSeparator,
 		"",
 		"What a fantastic group of individuals we have for this year's contest:",

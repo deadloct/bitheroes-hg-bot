@@ -1,7 +1,6 @@
 package settings
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -39,9 +38,8 @@ const (
 )
 
 var (
-	Intro   *template.Template
-	Help    string // not currently a template
-	Phrases []*template.Template
+	Intro *template.Template
+	Help  string // not currently a template
 
 	DataLocation         = "data"
 	ParticipantEmojiName = os.Getenv("BITHEROES_HG_BOT_EMOJI_NAME")
@@ -56,15 +54,9 @@ type IntroValues struct {
 	VictorCount int
 }
 
-type PhraseValues struct {
-	Dying  string
-	Killer string
-}
-
 func ImportData() {
 	importIntro()
 	importHelp()
-	importPhrases()
 }
 
 func importIntro() {
@@ -92,36 +84,4 @@ func importHelp() {
 
 	Help = string(v[:])
 	log.Info("imported help file")
-}
-
-func importPhrases() {
-	phrasesFilePath := path.Join(DataLocation, PhrasesFile)
-	data, err := ioutil.ReadFile(phrasesFilePath)
-	if err != nil {
-		log.Panicf("could not read the phrases file %v: %v", phrasesFilePath, err)
-	}
-
-	var phraseStrings []string
-	if err := json.Unmarshal(data, &phraseStrings); err != nil {
-		log.Panicf("could not parse the phrases file %v: %v", phrasesFilePath, err)
-	}
-
-	if len(phraseStrings) == 0 {
-		log.Panicf("there are no phrases in the phrases file %v", phrasesFilePath)
-	}
-
-	for i, phrase := range phraseStrings {
-		phraseTmpl, err := template.New(fmt.Sprintf("phrase-%v", i)).Parse(phrase)
-		if err != nil {
-			log.Panicf("unable to parse phrase '%v': %v", phrase, err)
-		}
-
-		Phrases = append(Phrases, phraseTmpl)
-	}
-
-	if len(Phrases) == 0 {
-		log.Panicf("no phrase templates were parsed")
-	}
-
-	log.Infof("imported %v phrases", len(Phrases))
 }

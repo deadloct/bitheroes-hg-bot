@@ -6,6 +6,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/deadloct/bitheroes-hg-bot/game"
+	"github.com/deadloct/bitheroes-hg-bot/lib"
 	"github.com/deadloct/bitheroes-hg-bot/settings"
 	log "github.com/sirupsen/logrus"
 )
@@ -66,7 +67,15 @@ var commands = []*discordgo.ApplicationCommand{
 	},
 }
 
-func RegisterCommands(session *discordgo.Session) error {
+type Manager struct {
+	jsonData []byte
+}
+
+func NewManager(jsonData []byte) *Manager {
+	return &Manager{jsonData: jsonData}
+}
+
+func (m *Manager) RegisterCommands(session *discordgo.Session) error {
 	log.Info("registering commands")
 
 	for _, v := range commands {
@@ -83,7 +92,7 @@ func RegisterCommands(session *discordgo.Session) error {
 	return nil
 }
 
-func DeregisterCommmands(session *discordgo.Session) error {
+func (m *Manager) DeregisterCommmands(session *discordgo.Session) error {
 	existingCommands, err := session.ApplicationCommands(session.State.User.ID, "")
 	if err != nil {
 		log.Errorf("could not retrieve existing commands: %v", err)
@@ -105,7 +114,7 @@ func DeregisterCommmands(session *discordgo.Session) error {
 	return nil
 }
 
-func CommandHandler(session *discordgo.Session, ic *discordgo.InteractionCreate) {
+func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.InteractionCreate) {
 	if ic.Member == nil {
 		log.Infof("user attempted to run the bot from outside a channel: %v", ic.User.ID)
 		content := "Citizens must sponsor a new Hunger Games from a channel."
@@ -192,7 +201,16 @@ func CommandHandler(session *discordgo.Session, ic *discordgo.InteractionCreate)
 			return
 		}
 
-		if err := game.ManagerInstance(session).StartGame(ic.ChannelID, delay, entryMultiplier, victors, ic.Member.User); err != nil {
+		cfg := game.GameStartConfig{
+			Author:          ic.Member.User,
+			Channel:         ic.ChannelID,
+			Delay:           delay,
+			EntryMultiplier: entryMultiplier,
+			PhraseGenerator: lib.NewJSONPhrases(m.jsonData),
+			VictorCount:     victors,
+		}
+
+		if err := game.ManagerInstance(session).StartGame(cfg); err != nil {
 			log.Errorf("error starting game: %v", err)
 		}
 

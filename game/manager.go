@@ -20,6 +20,7 @@ type GameStartConfig struct {
 	Author          *discordgo.User
 	Channel         string
 	Delay           time.Duration
+	JokeGenerator   JokeGenerator
 	PhraseGenerator PhraseGenerator
 	EntryMultiplier int
 	VictorCount     int
@@ -67,6 +68,7 @@ func (m *Manager) StartGame(cfg GameStartConfig) error {
 		Author:          cfg.Author,
 		Delay:           cfg.Delay,
 		EntryMultiplier: cfg.EntryMultiplier,
+		JokeGenerator:   cfg.JokeGenerator,
 		PhraseGenerator: cfg.PhraseGenerator,
 		Sender:          sender,
 		Session:         m.session,

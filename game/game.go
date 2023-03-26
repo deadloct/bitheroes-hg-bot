@@ -28,11 +28,17 @@ type PhraseGenerator interface {
 	GetRandomPhrase(user, mention string, alive []string) string
 }
 
+type JokeGenerator interface {
+	GetJoke() (lib.Joke, error)
+}
+
 type GameConfig struct {
 	Author          *discordgo.User
+	ChannelID       string
 	DayDelay        time.Duration
 	Delay           time.Duration // delayed start
 	EntryMultiplier int
+	JokeGenerator   JokeGenerator
 	PhraseGenerator PhraseGenerator
 	Sender          Sender
 	Session         *discordgo.Session
@@ -42,8 +48,10 @@ type GameConfig struct {
 type Game struct {
 	GameConfig
 
+	channelName  string
 	introMessage *discordgo.Message
 	sendCh       chan string
+	serverName   string
 	state        GameState
 	users        []*discordgo.User
 	userMap      map[string]*discordgo.User
@@ -56,13 +64,25 @@ func NewGame(cfg GameConfig) *Game {
 		cfg.DayDelay = settings.DefaultDayDelay
 	}
 
+	channelName := cfg.ChannelID
+	serverName := "unknown"
+	if channel, err := cfg.Session.State.Channel(cfg.ChannelID); err == nil {
+		channelName = channel.Name
+		if server, err := cfg.Session.State.Guild(channel.GuildID); err != nil {
+			serverName = server.Name
+		}
+	}
+
 	return &Game{
-		GameConfig: cfg,
-		userMap:    make(map[string]*discordgo.User),
+		GameConfig:  cfg,
+		userMap:     make(map[string]*discordgo.User),
+		channelName: channelName,
+		serverName:  serverName,
 	}
 }
 
 func (g *Game) Start(ctx context.Context) error {
+
 	g.sendCh = g.Sender.Start()
 
 	// This is the welcome messsage that people react to to enter.
@@ -76,7 +96,7 @@ func (g *Game) Start(ctx context.Context) error {
 		return err
 	}
 
-	log.Debug("sending intro")
+	g.logMessage(log.DebugLevel, "sending intro")
 	if g.introMessage, err = g.Sender.Send(intro); err != nil {
 		return err
 	}
@@ -131,29 +151,89 @@ func (g *Game) getIntro(vals settings.IntroValues) (string, error) {
 }
 
 func (g *Game) delayedStart(ctx context.Context) {
-	log.Debugf("delaying start by %v", g.Delay)
+	g.logMessage(log.DebugLevel, "delaying start by %v", g.Delay)
+	jokeCh := make(chan struct{})
+	g.startRandomJokes(ctx, jokeCh)
 
 	go func() {
 		select {
 		case <-ctx.Done():
-			log.Info("context done, cancelling game")
+			jokeCh <- struct{}{}
+			g.logMessage(log.InfoLevel, "context done, cancelling game")
 			g.Lock()
 			g.state = Cancelled
 			g.Unlock()
 
 		case <-time.After(g.Delay):
+			jokeCh <- struct{}{}
 			g.run(ctx)
 		}
 	}()
 }
 
+func (g *Game) startRandomJokes(ctx context.Context, stop chan struct{}) {
+	if g.JokeGenerator == nil {
+		g.logMessage(log.InfoLevel, "not starting joke engine because joke generator is nil for game in channel %s", g.introMessage.ChannelID)
+		return
+	}
+
+	go func() {
+		ticker := time.NewTicker(settings.JokeInterval)
+		time.Sleep(2 * time.Second)
+		msg, err := g.sendJoke(nil)
+		if err != nil {
+			return
+		}
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-stop:
+				return
+			case <-ticker.C:
+				if msg, err = g.sendJoke(msg); err != nil {
+					return
+				}
+			}
+		}
+	}()
+}
+
+func (g *Game) sendJoke(msg *discordgo.Message) (*discordgo.Message, error) {
+	prefix := "Greetings, esteemed guests and citizens of the Capitol! As the royal jester to our illustrious President Snow, I stand before you today to bring some much-needed levity and humor to this esteemed gathering. I understand that some of you may be feeling impatient, but fear not! I am here to entertain you with the finest collection of dad jokes this side of the Districts."
+
+	j, err := g.JokeGenerator.GetJoke()
+	if err != nil {
+		g.logMessage(log.WarnLevel, "failed to get joke: %v", err)
+		return msg, err
+	}
+
+	text := fmt.Sprintf("%v\n\n%v\n\n%v\n\n%v\n\n%v\n\n%v", settings.DefaultSeparator, prefix, settings.HalfSeparator, j.Question, j.Answer, settings.DefaultSeparator)
+	g.logMessage(log.DebugLevel, "Sending joke '%v'", j)
+	if msg == nil {
+		if msg, err = g.Sender.Send(text); err != nil {
+			g.logMessage(log.WarnLevel, "failed to send joke: %v", err)
+			return msg, err
+		}
+	} else {
+		if msg, err = g.Session.ChannelMessageEdit(msg.ChannelID, msg.ID, text); err != nil {
+			g.logMessage(log.WarnLevel, "failed to edit joke: %v", err)
+			return msg, err
+		}
+	}
+
+	return msg, nil
+}
+
 func (g *Game) run(ctx context.Context) {
-	log.Debug("starting game")
+	g.logMessage(log.InfoLevel, "starting game with user count %v", len(g.users))
 	g.Lock()
 	g.state = Started
 	g.Unlock()
 
 	if len(g.users) == 0 {
+		g.logMessage(log.InfoLevel, "no users entered")
 		g.Sender.Send(fmt.Sprintf("No tributes have come forward within %v. This district will be eliminated.", g.Delay))
 		g.Lock()
 		g.state = Cancelled
@@ -180,18 +260,18 @@ func (g *Game) run(ctx context.Context) {
 
 		select {
 		case <-ctx.Done():
-			log.Infof("context done, cancelling game on day %v", day)
+			g.logMessage(log.InfoLevel, "context done, cancelling game on day %v", day)
 			g.Lock()
 			g.state = Cancelled
 			g.Unlock()
 			return
 
 		default:
-			log.Debugf("simulating day %v with %v tributes", day, len(g.users))
+			g.logMessage(log.InfoLevel, "simulating day %v with %v tributes", day, len(g.users))
 			var err error
 			g.users, err = g.runDay(ctx, day, g.users)
 			if err != nil {
-				log.Errorf("failed to simulate day %v: %v", day, err)
+				g.logMessage(log.ErrorLevel, "failed to simulate day %v: %v", day, err)
 				g.Sender.Send(fmt.Sprintf("failed to run game for day %v", day+1))
 				g.Lock()
 				g.state = Cancelled
@@ -199,14 +279,14 @@ func (g *Game) run(ctx context.Context) {
 				return
 			}
 
-			log.Debugf("users left after day %v: %v", day, len(g.users))
+			g.logMessage(log.InfoLevel, "users left after day %v: %v", day, len(g.users))
 		}
 	}
 
 	var mentions []string
 	for _, u := range g.users {
 		mentions = append(mentions, fmt.Sprintf("<@%v>", u.ID))
-		log.Debugf("winner: %v#%v (%v)", u.Username, u.Discriminator, u.ID)
+		g.logMessage(log.InfoLevel, "winner: %v#%v (%v)", u.Username, u.Discriminator, u.ID)
 	}
 
 	congrats := lib.ToDoubleStruck("Congratulations to our new victor(s)")
@@ -246,7 +326,7 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 
 	killCount, err := lib.GetRandomInt(min, max)
 	if err != nil {
-		log.Errorf("failed to get random number between %v and %v: %v", min, max, err)
+		g.logMessage(log.ErrorLevel, "failed to get random number between %v and %v: %v", min, max, err)
 		return nil, err
 	}
 
@@ -261,7 +341,7 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 		for {
 			toDie, err := lib.GetRandomInt(0, len(users))
 			if err != nil {
-				log.Errorf("failed to get random number between %v and %v: %v", min, max, err)
+				g.logMessage(log.ErrorLevel, "failed to get random number between %v and %v: %v", min, max, err)
 				return nil, err
 			}
 
@@ -288,7 +368,7 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 		}
 
 		line := "• " + g.PhraseGenerator.GetRandomPhrase(users[i].Username, mention, livingNames)
-		log.Debugf("Day %v: %v", day, line)
+		g.logMessage(log.DebugLevel, "Day %v: %v", day, line)
 		output = append(output, line)
 	}
 
@@ -308,7 +388,7 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 }
 
 func (g *Game) sendTributeOutput(users []*discordgo.User) {
-	log.Debugf("tribute count: %v", len(users))
+	g.logMessage(log.DebugLevel, "tribute count: %v", len(users))
 
 	tributeLines := []string{
 		settings.DefaultSeparator,
@@ -342,5 +422,23 @@ func (g *Game) sendBatchOutput(lines []string) {
 
 	if len(output) > 0 {
 		g.sendCh <- output
+	}
+}
+
+func (g *Game) logMessage(level log.Level, msg string, args ...interface{}) {
+	suffix := fmt.Sprintf(" (server:'%s' channel:'%s')", g.serverName, g.channelName)
+	switch level {
+	case log.TraceLevel:
+		log.Tracef(msg+suffix, args...)
+	case log.DebugLevel:
+		log.Debugf(msg+suffix, args...)
+	case log.InfoLevel:
+		log.Infof(msg+suffix, args...)
+	case log.WarnLevel:
+		log.Warnf(msg+suffix, args...)
+	case log.ErrorLevel:
+		log.Errorf(msg+suffix, args...)
+	case log.PanicLevel:
+		log.Panicf(msg+suffix, args...)
 	}
 }

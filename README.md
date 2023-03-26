@@ -59,3 +59,11 @@ The death phrases are imported from `data/phrases.en.json` file and can use the 
 
 * `{{.Dying}}`: The player that is dying.
 * `{{.Killer}}`: A random living player that contributed to the dying player's death.
+
+## Credits
+
+Thanks to Shadown for the original Bit Heroes Hunger Games bots. This bot is nothing but a cheap, unworthy imitation.
+
+I need to also credit the phrase authors. It may take time to troll the galaxy for their messages, as they've done with their terrible and offensive humor.
+
+Speaking of terrible and offensive humor, the jester's jokes were borrowed from [https://github.com/yesinteractive/dadjokes](https://github.com/yesinteractive/dadjokes).

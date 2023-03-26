@@ -25,7 +25,10 @@ const (
 	DefaultVictorCount = 1
 	MinimumVictorCount = 0
 
+	JokeInterval = 10 * time.Second
+
 	PhrasesFile = "phrases.en.json"
+	JokesFile   = "jokes.en.json"
 	IntroFile   = "intro.template"
 	HelpFile    = "help.en.template"
 

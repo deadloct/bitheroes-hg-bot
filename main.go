@@ -26,11 +26,17 @@ func main() {
 		log.Panic(err)
 	}
 
-	data, err := os.ReadFile(path.Join(settings.DataLocation, settings.PhrasesFile))
+	phrasesData, err := os.ReadFile(path.Join(settings.DataLocation, settings.PhrasesFile))
 	if err != nil {
 		log.Panic(err)
 	}
-	commandManager := cmd.NewManager(data)
+
+	jokesData, err := os.ReadFile(path.Join(settings.DataLocation, settings.JokesFile))
+	if err != nil {
+		log.Panic(err)
+	}
+
+	commandManager := cmd.NewManager(phrasesData, jokesData)
 
 	// Listen for server messages only
 	session.Identify.Intents = discordgo.IntentGuildMessages | discordgo.IntentGuildMessageReactions | discordgo.IntentMessageContent

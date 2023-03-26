@@ -97,12 +97,12 @@ func (s *DiscordSender) Send(str string) (*discordgo.Message, error) {
 }
 
 func (s *DiscordSender) send(str string) (*discordgo.Message, error) {
-	log.Debugf("sending message of length %v", len(str))
+	log.Tracef("sending message of length %v", len(str))
 	msg, err := s.session.ChannelMessageSend(s.channelID, str)
 	if err != nil {
 		log.Errorf("error sending message of length %v: %v", len(str), err)
 	} else {
-		log.Debugf("successfully sent message of length %v", len(str))
+		log.Tracef("successfully sent message of length %v", len(str))
 	}
 
 	return msg, err

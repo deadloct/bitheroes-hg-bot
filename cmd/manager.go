@@ -72,11 +72,12 @@ var commands = []*discordgo.ApplicationCommand{
 }
 
 type Manager struct {
-	jsonData []byte
+	phraseData []byte
+	jokeData   []byte
 }
 
-func NewManager(jsonData []byte) *Manager {
-	return &Manager{jsonData: jsonData}
+func NewManager(phraseData []byte, jokeData []byte) *Manager {
+	return &Manager{phraseData: phraseData, jokeData: jokeData}
 }
 
 func (m *Manager) RegisterCommands(session *discordgo.Session) error {
@@ -205,14 +206,20 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 			return
 		}
 
-		jp := lib.NewJSONPhrases(m.jsonData)
+		jp := lib.NewJSONPhrases(m.phraseData)
 		log.Infof("imported %v phrases", jp.PhraseCount())
+
+		jj, err := lib.NewJSONJokes(m.jokeData)
+		if err != nil {
+			log.Warnf("unable to load jokes: %v", err)
+		}
 
 		cfg := game.GameStartConfig{
 			Author:          ic.Member.User,
 			Channel:         ic.ChannelID,
 			Delay:           delay,
 			EntryMultiplier: entryMultiplier,
+			JokeGenerator:   jj,
 			PhraseGenerator: jp,
 			VictorCount:     victors,
 		}

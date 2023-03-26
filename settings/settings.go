@@ -15,7 +15,7 @@ const (
 	// Seconds
 	DefaultStartDelay = 60
 	MinimumStartDelay = 5
-	MaximumStartDelay = 900 // 15 minutes in seconds
+	MaximumStartDelay = 60 * 60 // 60 minutes in seconds
 
 	DefaultEntryMultiplier = 1
 	MinimumEntryMultiplier = 1

@@ -35,15 +35,19 @@ var commands = []*discordgo.ApplicationCommand{
 				Type: discordgo.ApplicationCommandOptionInteger,
 				Name: CommandStartOptionStartDelay,
 				Description: fmt.Sprintf(
-					"Seconds to wait for reactions before starting game (Default: %v, Min: %v, Max: %v)",
-					settings.DefaultStartDelay, settings.MinimumStartDelay, settings.MaximumStartDelay),
+					"Seconds to wait for reactions before starting game. Default: %v, Min: %v, Max: %v (%v)",
+					settings.DefaultStartDelay,
+					settings.MinimumStartDelay,
+					settings.MaximumStartDelay,
+					time.Duration(settings.MaximumStartDelay)*time.Second,
+				),
 				Required: false,
 			},
 			{
 				Type: discordgo.ApplicationCommandOptionInteger,
 				Name: CommandStartOptionVictorCount,
 				Description: fmt.Sprintf(
-					"Number of victors (winners) (Default: %v, Min: %v)",
+					"Number of victors (winners). Default: %v, Min: %v",
 					settings.DefaultVictorCount, settings.DefaultVictorCount),
 				Required: false,
 			},
@@ -51,7 +55,7 @@ var commands = []*discordgo.ApplicationCommand{
 				Type: discordgo.ApplicationCommandOptionInteger,
 				Name: CommandStartOptionEntryMultiplier,
 				Description: fmt.Sprintf(
-					"Number of entries per tribute (Default: %v, Min: %v, Max: %v)",
+					"Number of entries per tribute. Default: %v, Min: %v, Max: %v",
 					settings.DefaultEntryMultiplier, settings.MinimumEntryMultiplier, settings.MaximumEntryMultiplier),
 				Required: false,
 			},

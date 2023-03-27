@@ -17,6 +17,7 @@ const (
 	MinimumStartDelay = 5
 	MaximumStartDelay = 60 * 60 // 60 minutes in seconds
 
+	EnableEntryMultiplier  = false
 	DefaultEntryMultiplier = 1
 	MinimumEntryMultiplier = 1
 	MaximumEntryMultiplier = 100
@@ -29,7 +30,7 @@ const (
 
 	PhrasesFile = "phrases.en.json"
 	JokesFile   = "jokes.en.json"
-	IntroFile   = "intro.template"
+	IntroFile   = "intro.en.template"
 	HelpFile    = "help.en.template"
 
 	DiscordMaxMessageLength = 2000

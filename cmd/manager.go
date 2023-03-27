@@ -51,14 +51,6 @@ var commands = []*discordgo.ApplicationCommand{
 					settings.DefaultVictorCount, settings.DefaultVictorCount),
 				Required: false,
 			},
-			{
-				Type: discordgo.ApplicationCommandOptionInteger,
-				Name: CommandStartOptionEntryMultiplier,
-				Description: fmt.Sprintf(
-					"Number of entries per tribute. Default: %v, Min: %v, Max: %v",
-					settings.DefaultEntryMultiplier, settings.MinimumEntryMultiplier, settings.MaximumEntryMultiplier),
-				Required: false,
-			},
 		},
 	},
 	{
@@ -69,6 +61,24 @@ var commands = []*discordgo.ApplicationCommand{
 		Name:        CommandClear,
 		Description: "Clear bot messages in this channel",
 	},
+}
+
+func init() {
+	// Debug option to amplify entries
+	if settings.EnableEntryMultiplier {
+		for _, command := range commands {
+			if command.Name == CommandStart {
+				command.Options = append(command.Options, &discordgo.ApplicationCommandOption{
+					Type: discordgo.ApplicationCommandOptionInteger,
+					Name: CommandStartOptionEntryMultiplier,
+					Description: fmt.Sprintf(
+						"Number of entries per tribute. Default: %v, Min: %v, Max: %v",
+						settings.DefaultEntryMultiplier, settings.MinimumEntryMultiplier, settings.MaximumEntryMultiplier),
+					Required: false,
+				})
+			}
+		}
+	}
 }
 
 type Manager struct {

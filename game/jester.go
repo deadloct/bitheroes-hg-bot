@@ -58,7 +58,7 @@ func (j *Jester) sendJoke(msg *discordgo.Message) (*discordgo.Message, error) {
 		return msg, err
 	}
 
-	text := fmt.Sprintf("%v\n\n%v\n\n%v\n\n%v\n\n%v\n\n%v", settings.DefaultSeparator, prefix, settings.HalfSeparator, joke.Question, joke.Answer, settings.DefaultSeparator)
+	text := fmt.Sprintf("> %v\n> \n> *%v*\n> *%v*", prefix, joke.Question, joke.Answer)
 	if msg == nil {
 		if msg, err = j.sender.Send(text); err != nil {
 			log.Warnf("failed to send joke: %v", err)

@@ -243,12 +243,10 @@ func (g *Game) run(ctx context.Context) {
 		g.logMessage(log.InfoLevel, "winner: %v %v#%v %v", p.DisplayName(), p.User.Username, p.User.Discriminator, p.User.ID)
 	}
 
-	congrats := lib.ToDoubleStruck("Congratulations to our new victor(s)")
 	g.sendBatchOutput([]string{
-		settings.DefaultSeparator,
-		"This year's Hunger Games have concluded.",
-		fmt.Sprintf("**%v**: %v", congrats, strings.Join(mentions, ", ")),
-		settings.DefaultSeparator,
+		" ",
+		"**__This year's Hunger Games have concluded__**",
+		fmt.Sprintf("%v: %v", "Congratulations to our new victor(s)", strings.Join(mentions, ", ")),
 	})
 
 	g.Lock()
@@ -262,9 +260,8 @@ func (g *Game) runDay(ctx context.Context, day int, participants []*Participant)
 	}
 
 	output := []string{
-		settings.HalfSeparator,
-		lib.ToDoubleStruck(fmt.Sprintf("**Day %v**", day+1)),
-		settings.HalfSeparator,
+		" ",
+		fmt.Sprintf("**__DAY %v__**", day+1),
 		" ",
 	}
 
@@ -328,7 +325,7 @@ func (g *Game) runDay(ctx context.Context, day int, participants []*Participant)
 
 	output = append(
 		output,
-		settings.DefaultSeparator,
+		" ",
 		fmt.Sprintf("**%v player(s) remain at the end of day %v:** %v", len(living), day+1, strings.Join(livingNames, ", ")),
 	)
 
@@ -345,9 +342,7 @@ func (g *Game) sendTributeOutput(participants []*Participant) {
 	g.logMessage(log.DebugLevel, "tribute count: %v", len(participants))
 
 	tributeLines := []string{
-		settings.DefaultSeparator,
-		lib.ToDoubleStruck("**Please welcome our brave tributes!**"),
-		settings.DefaultSeparator,
+		"**__Please welcome our brave tributes!__**",
 		"",
 		"What a fantastic group of individuals we have for this year's contest:",
 	}
@@ -356,7 +351,7 @@ func (g *Game) sendTributeOutput(participants []*Participant) {
 		tributes = append(tributes, p.DisplayName())
 	}
 
-	tributeLines = append(tributeLines, strings.Join(tributes, ", "), "", settings.DefaultSeparator)
+	tributeLines = append(tributeLines, strings.Join(tributes, ", "))
 	g.sendBatchOutput(tributeLines)
 }
 

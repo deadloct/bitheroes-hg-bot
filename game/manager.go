@@ -17,7 +17,7 @@ type RunningGame struct {
 }
 
 type GameStartConfig struct {
-	Author          *discordgo.User
+	Author          *discordgo.Member
 	Channel         string
 	Delay           time.Duration
 	JokeGenerator   JokeGenerator
@@ -65,7 +65,7 @@ func (m *Manager) StartGame(cfg GameStartConfig) error {
 	log.Infof("starting game in channel %v", cfg.Channel)
 
 	g := NewGame(GameConfig{
-		Author:          cfg.Author,
+		Author:          NewParticipant(cfg.Author),
 		Delay:           cfg.Delay,
 		EntryMultiplier: cfg.EntryMultiplier,
 		JokeGenerator:   cfg.JokeGenerator,
@@ -105,7 +105,7 @@ func (m *Manager) ReactionHandler(session *discordgo.Session, mra *discordgo.Mes
 		return
 	}
 
-	rg.Game.RegisterUser(mra.MessageID, mra.Emoji.Name, mra.Member.User)
+	rg.Game.RegisterUser(mra.MessageID, mra.Emoji.Name, NewParticipant(mra.Member))
 }
 
 func (m *Manager) EndGame(channel string) {
@@ -139,7 +139,7 @@ func (m *Manager) RetrieveBotMessagesInChannel(channelID, lastMessageID string, 
 	}
 
 	for i := 0; i < len(new); i++ {
-		// Only delete bot messages
+		// Only return bot messages
 		if new[i].Author.ID == m.session.State.User.ID {
 			messages = append(messages, new[i].ID)
 		}

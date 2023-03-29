@@ -12,9 +12,7 @@ test:
 	go test ./... -test.v -race
 
 bench:
-	go test -bench=. -benchtime=20x -benchmem ./... | tee bench-new.txt
-	benchstat bench-old.txt bench-new.txt
-	mv bench-new.txt bench-old.txt
+	go test -bench=. -benchtime=10s -benchmem ./...
 
 build: clean
 	go build -o $(LOCAL_PATH)/$(NAME)

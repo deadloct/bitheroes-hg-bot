@@ -225,7 +225,7 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 		}
 
 		cfg := game.GameStartConfig{
-			Author:          ic.Member.User,
+			Author:          ic.Member,
 			Channel:         ic.ChannelID,
 			Delay:           delay,
 			EntryMultiplier: entryMultiplier,

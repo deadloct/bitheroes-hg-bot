@@ -17,7 +17,7 @@ const (
 	MinimumStartDelay = 5
 	MaximumStartDelay = 60 * 60 // 60 minutes in seconds
 
-	EnableEntryMultiplier  = false
+	EnableEntryMultiplier  = true
 	DefaultEntryMultiplier = 1
 	MinimumEntryMultiplier = 1
 	MaximumEntryMultiplier = 100

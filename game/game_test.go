@@ -12,9 +12,10 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/deadloct/bitheroes-hg-bot/lib"
 	"github.com/deadloct/bitheroes-hg-bot/settings"
+	log "github.com/sirupsen/logrus"
 )
 
-func benchmarkGameRun(b *testing.B, cfg GameConfig, users []*discordgo.User) {
+func benchmarkGameRun(b *testing.B, cfg GameConfig, members []*discordgo.Member) {
 	b.Helper()
 
 	sender := &BufferSender{SendLatency: 100 * time.Millisecond}
@@ -23,6 +24,11 @@ func benchmarkGameRun(b *testing.B, cfg GameConfig, users []*discordgo.User) {
 
 	cfg.Sender = sender
 	g := NewGame(cfg)
+	g.introMessage = &discordgo.Message{ID: "123"}
+
+	for i := 0; i < len(members); i++ {
+		g.RegisterUser("123", settings.ParticipantEmojiName, NewParticipant(members[i]))
+	}
 
 	// Hacks to avoid using g.Start, which waits for reactions
 	g.sendCh = msgChan
@@ -30,24 +36,27 @@ func benchmarkGameRun(b *testing.B, cfg GameConfig, users []*discordgo.User) {
 	g.run(context.Background())
 }
 
-func benchmarkSetup(b *testing.B, userCount, multiplier int) (PhraseGenerator, []*discordgo.User) {
+func benchmarkSetup(b *testing.B, userCount, multiplier int) (PhraseGenerator, []*discordgo.Member) {
 	b.Helper()
+	log.SetLevel(log.WarnLevel)
 	data, err := os.ReadFile(path.Join("..", settings.DataLocation, settings.PhrasesFile))
 	if err != nil {
 		b.Fatal(err)
 	}
 
-	var users []*discordgo.User
+	var members []*discordgo.Member
 	for j := 0; j < userCount; j++ {
 		for k := 0; k < multiplier; k++ {
-			users = append(users, &discordgo.User{
-				ID:       fmt.Sprintf("%v-%v", j, k),
-				Username: fmt.Sprintf("user-%v-%v", j, k),
+			members = append(members, &discordgo.Member{
+				User: &discordgo.User{
+					ID:       fmt.Sprintf("%v-%v", j, k),
+					Username: fmt.Sprintf("user-%v-%v", j, k),
+				},
 			})
 		}
 	}
 
-	return lib.NewJSONPhrases(data), users
+	return lib.NewJSONPhrases(data), members
 }
 
 func BenchmarkGameDuration(b *testing.B) {
@@ -75,10 +84,6 @@ func BenchmarkGameDuration(b *testing.B) {
 			UserCount:       1000,
 			EntryMultiplier: 1,
 		},
-		"1000 users, 100 multiplier": {
-			UserCount:       1000,
-			EntryMultiplier: 100,
-		},
 	}
 
 	for name, test := range tests {
@@ -89,7 +94,11 @@ func BenchmarkGameDuration(b *testing.B) {
 				benchmarkGameRun(
 					b,
 					GameConfig{
-						Author:          &discordgo.User{Username: "sponsor", ID: "123"},
+						Author: NewParticipant(&discordgo.Member{
+							Nick: "Sponsor",
+							User: &discordgo.User{Username: "sponsor", ID: "123"},
+						}),
+						ChannelID:       "123",
 						DayDelay:        1 * time.Nanosecond,
 						PhraseGenerator: jp,
 						Session:         &discordgo.Session{},

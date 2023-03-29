@@ -33,7 +33,7 @@ type JokeGenerator interface {
 }
 
 type GameConfig struct {
-	Author          *discordgo.User
+	Author          *Participant
 	ChannelID       string
 	DayDelay        time.Duration
 	Delay           time.Duration // delayed start
@@ -48,13 +48,13 @@ type GameConfig struct {
 type Game struct {
 	GameConfig
 
-	channelName  string
-	introMessage *discordgo.Message
-	sendCh       chan string
-	serverName   string
-	state        GameState
-	users        []*discordgo.User
-	userMap      map[string]*discordgo.User
+	channelName    string
+	introMessage   *discordgo.Message
+	sendCh         chan string
+	serverName     string
+	state          GameState
+	participants   []*Participant
+	participantMap map[string]*Participant
 
 	sync.Mutex
 }
@@ -74,10 +74,10 @@ func NewGame(cfg GameConfig) *Game {
 	}
 
 	return &Game{
-		GameConfig:  cfg,
-		userMap:     make(map[string]*discordgo.User),
-		channelName: channelName,
-		serverName:  serverName,
+		GameConfig:     cfg,
+		participantMap: make(map[string]*Participant),
+		channelName:    channelName,
+		serverName:     serverName,
 	}
 }
 
@@ -89,7 +89,7 @@ func (g *Game) Start(ctx context.Context) error {
 	intro, err := g.getIntro(settings.IntroValues{
 		Delay:       g.Delay,
 		EmojiCode:   settings.ParticipantEmojiCode,
-		User:        g.Author.Username,
+		User:        g.Author.DisplayName(),
 		VictorCount: g.VictorCount,
 	})
 	if err != nil {
@@ -122,7 +122,7 @@ func (g *Game) IsRunning() bool {
 	return g.state == Started
 }
 
-func (g *Game) RegisterUser(messageID, emoji string, user *discordgo.User) {
+func (g *Game) RegisterUser(messageID, emoji string, participant *Participant) {
 	if g.HasStarted() {
 		return
 	}
@@ -131,13 +131,17 @@ func (g *Game) RegisterUser(messageID, emoji string, user *discordgo.User) {
 		return
 	}
 
-	if user.Bot {
+	if messageID != g.introMessage.ID {
 		return
 	}
 
-	if _, ok := g.userMap[user.ID]; !ok {
-		g.userMap[user.ID] = user
-		g.users = append(g.users, user)
+	if participant.User.Bot {
+		return
+	}
+
+	if _, ok := g.participantMap[participant.User.ID]; !ok {
+		g.participantMap[participant.User.ID] = participant
+		g.participants = append(g.participants, participant)
 	}
 }
 
@@ -152,8 +156,9 @@ func (g *Game) getIntro(vals settings.IntroValues) (string, error) {
 
 func (g *Game) delayedStart(ctx context.Context) {
 	g.logMessage(log.DebugLevel, "delaying start by %v", g.Delay)
+
 	jokeCh := make(chan struct{})
-	g.startRandomJokes(ctx, jokeCh)
+	NewJester(g.JokeGenerator, g.Sender, g.Session).StartRandomJokes(ctx, jokeCh)
 
 	go func() {
 		select {
@@ -171,68 +176,13 @@ func (g *Game) delayedStart(ctx context.Context) {
 	}()
 }
 
-func (g *Game) startRandomJokes(ctx context.Context, stop chan struct{}) {
-	if g.JokeGenerator == nil {
-		g.logMessage(log.InfoLevel, "not starting joke engine because joke generator is nil for game in channel %s", g.introMessage.ChannelID)
-		return
-	}
-
-	go func() {
-		ticker := time.NewTicker(settings.JokeInterval)
-		time.Sleep(2 * time.Second)
-		msg, err := g.sendJoke(nil)
-		if err != nil {
-			return
-		}
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-stop:
-				return
-			case <-ticker.C:
-				if msg, err = g.sendJoke(msg); err != nil {
-					return
-				}
-			}
-		}
-	}()
-}
-
-func (g *Game) sendJoke(msg *discordgo.Message) (*discordgo.Message, error) {
-	prefix := "Greetings, esteemed guests and citizens of the Capitol! As the royal jester to our illustrious President Snow, I stand before you today to bring some much-needed levity and humor to this esteemed gathering. I understand that some of you may be feeling impatient, but fear not! I am here to entertain you with the finest collection of dad jokes this side of the Districts."
-
-	j, err := g.JokeGenerator.GetJoke()
-	if err != nil {
-		g.logMessage(log.WarnLevel, "failed to get joke: %v", err)
-		return msg, err
-	}
-
-	text := fmt.Sprintf("%v\n\n%v\n\n%v\n\n%v\n\n%v\n\n%v", settings.DefaultSeparator, prefix, settings.HalfSeparator, j.Question, j.Answer, settings.DefaultSeparator)
-	g.logMessage(log.DebugLevel, "Sending joke '%v'", j)
-	if msg == nil {
-		if msg, err = g.Sender.Send(text); err != nil {
-			g.logMessage(log.WarnLevel, "failed to send joke: %v", err)
-			return msg, err
-		}
-	} else {
-		if msg, err = g.Session.ChannelMessageEdit(msg.ChannelID, msg.ID, text); err != nil {
-			g.logMessage(log.WarnLevel, "failed to edit joke: %v", err)
-			return msg, err
-		}
-	}
-
-	return msg, nil
-}
-
 func (g *Game) run(ctx context.Context) {
-	g.logMessage(log.InfoLevel, "starting game with user count %v", len(g.users))
+	g.logMessage(log.InfoLevel, "starting game with user count %v", len(g.participants))
 	g.Lock()
 	g.state = Started
 	g.Unlock()
 
-	if len(g.users) == 0 {
+	if len(g.participants) == 0 {
 		g.logMessage(log.InfoLevel, "no users entered")
 		g.Sender.Send(fmt.Sprintf("No tributes have come forward within %v. This district will be eliminated.", g.Delay))
 		g.Lock()
@@ -242,20 +192,24 @@ func (g *Game) run(ctx context.Context) {
 	}
 
 	if g.EntryMultiplier > 1 {
-		for _, u := range g.users {
+		for _, p := range g.participants {
 			for i := 2; i <= g.EntryMultiplier; i++ {
-				g.users = append(g.users, &discordgo.User{
-					Username:      fmt.Sprintf("%v-%v", u.Username, i),
-					ID:            u.ID,
-					Discriminator: u.Discriminator,
-				})
+				name := fmt.Sprintf("%v-%v", p.DisplayName(), i)
+				g.participants = append(g.participants, NewParticipant(&discordgo.Member{
+					Nick: name,
+					User: &discordgo.User{
+						Username:      name,
+						ID:            p.User.ID,
+						Discriminator: p.User.Discriminator,
+					},
+				}))
 			}
 		}
 	}
 
-	g.sendTributeOutput(g.users)
+	g.sendTributeOutput(g.participants)
 
-	for day := 0; len(g.users) > g.VictorCount; day++ {
+	for day := 0; len(g.participants) > g.VictorCount; day++ {
 		time.Sleep(g.DayDelay)
 
 		select {
@@ -267,9 +221,9 @@ func (g *Game) run(ctx context.Context) {
 			return
 
 		default:
-			g.logMessage(log.InfoLevel, "simulating day %v with %v tributes", day, len(g.users))
+			g.logMessage(log.InfoLevel, "simulating day %v with %v tributes", day, len(g.participants))
 			var err error
-			g.users, err = g.runDay(ctx, day, g.users)
+			g.participants, err = g.runDay(ctx, day, g.participants)
 			if err != nil {
 				g.logMessage(log.ErrorLevel, "failed to simulate day %v: %v", day, err)
 				g.Sender.Send(fmt.Sprintf("failed to run game for day %v", day+1))
@@ -279,14 +233,14 @@ func (g *Game) run(ctx context.Context) {
 				return
 			}
 
-			g.logMessage(log.InfoLevel, "users left after day %v: %v", day, len(g.users))
+			g.logMessage(log.InfoLevel, "users left after day %v: %v", day, len(g.participants))
 		}
 	}
 
 	var mentions []string
-	for _, u := range g.users {
-		mentions = append(mentions, fmt.Sprintf("<@%v>", u.ID))
-		g.logMessage(log.InfoLevel, "winner: %v#%v (%v)", u.Username, u.Discriminator, u.ID)
+	for _, p := range g.participants {
+		mentions = append(mentions, p.Mention())
+		g.logMessage(log.InfoLevel, "winner: %v %v#%v %v", p.DisplayName(), p.User.Username, p.User.Discriminator, p.User.ID)
 	}
 
 	congrats := lib.ToDoubleStruck("Congratulations to our new victor(s)")
@@ -302,9 +256,9 @@ func (g *Game) run(ctx context.Context) {
 	g.Unlock()
 }
 
-func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]*discordgo.User, error) {
-	if len(users) == 1 {
-		return users, nil
+func (g *Game) runDay(ctx context.Context, day int, participants []*Participant) ([]*Participant, error) {
+	if len(participants) == 1 {
+		return participants, nil
 	}
 
 	output := []string{
@@ -316,10 +270,10 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 
 	// min and max are 0-based
 	var min int
-	max := len(users) - g.VictorCount + 1 // right is exclusive, so this is really `len(users) - g.VictorCount``
+	max := (len(participants) / 2) + 1 // +1 b/c right is exclusive
 
 	// 1/2 - 3/4 on the first day, it's always a slaughter
-	if day == 0 && len(users) > 5 {
+	if day == 0 && len(participants) > 5 {
 		min = max / 2
 		max = max * 3 / 4
 	}
@@ -333,13 +287,13 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 	if killCount == 0 {
 		output = append(output, fmt.Sprintf("**All was quiet on day %v.**", day+1))
 		g.sendBatchOutput(output)
-		return users, nil
+		return participants, nil
 	}
 
 	dead := make(map[int]struct{})
 	for i := 0; i < killCount; i++ {
 		for {
-			toDie, err := lib.GetRandomInt(0, len(users))
+			toDie, err := lib.GetRandomInt(0, len(participants))
 			if err != nil {
 				g.logMessage(log.ErrorLevel, "failed to get random number between %v and %v: %v", min, max, err)
 				return nil, err
@@ -352,22 +306,22 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 		}
 	}
 
-	var living []*discordgo.User
+	var living []*Participant
 	var livingNames []string
-	for i, user := range users {
+	for i, p := range participants {
 		if _, dead := dead[i]; !dead {
-			living = append(living, user)
-			livingNames = append(livingNames, user.Username)
+			living = append(living, p)
+			livingNames = append(livingNames, p.DisplayName())
 		}
 	}
 
 	for i := range dead {
 		mention := ""
 		if g.EntryMultiplier == 1 {
-			mention = fmt.Sprintf("<@%v>", users[i].ID)
+			mention = participants[i].Mention()
 		}
 
-		line := "• " + g.PhraseGenerator.GetRandomPhrase(users[i].Username, mention, livingNames)
+		line := "• " + g.PhraseGenerator.GetRandomPhrase(participants[i].DisplayName(), mention, livingNames)
 		g.logMessage(log.DebugLevel, "Day %v: %v", day, line)
 		output = append(output, line)
 	}
@@ -387,8 +341,8 @@ func (g *Game) runDay(ctx context.Context, day int, users []*discordgo.User) ([]
 	return living, nil
 }
 
-func (g *Game) sendTributeOutput(users []*discordgo.User) {
-	g.logMessage(log.DebugLevel, "tribute count: %v", len(users))
+func (g *Game) sendTributeOutput(participants []*Participant) {
+	g.logMessage(log.DebugLevel, "tribute count: %v", len(participants))
 
 	tributeLines := []string{
 		settings.DefaultSeparator,
@@ -398,8 +352,8 @@ func (g *Game) sendTributeOutput(users []*discordgo.User) {
 		"What a fantastic group of individuals we have for this year's contest:",
 	}
 	var tributes []string
-	for _, u := range users {
-		tributes = append(tributes, u.Username)
+	for _, p := range participants {
+		tributes = append(tributes, p.DisplayName())
 	}
 
 	tributeLines = append(tributeLines, strings.Join(tributes, ", "), "", settings.DefaultSeparator)

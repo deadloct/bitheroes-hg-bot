@@ -244,7 +244,7 @@ func (g *Game) run(ctx context.Context) {
 	}
 
 	g.sendBatchOutput([]string{
-		" ",
+		settings.BlankLine,
 		"**__This year's Hunger Games have concluded__**",
 		fmt.Sprintf("%v: %v", "Congratulations to our new victor(s)", strings.Join(mentions, ", ")),
 	})
@@ -260,9 +260,9 @@ func (g *Game) runDay(ctx context.Context, day int, participants []*Participant)
 	}
 
 	output := []string{
-		" ",
+		settings.BlankLine,
 		fmt.Sprintf("**__DAY %v__**", day+1),
-		" ",
+		settings.BlankLine,
 	}
 
 	// min and max are 0-based
@@ -323,16 +323,21 @@ func (g *Game) runDay(ctx context.Context, day int, participants []*Participant)
 		output = append(output, line)
 	}
 
-	output = append(
-		output,
-		" ",
-		fmt.Sprintf("**%v player(s) remain at the end of day %v:** %v", len(living), day+1, strings.Join(livingNames, ", ")),
-	)
+	dayend := []string{
+		settings.BlankLine,
+		fmt.Sprintf(
+			"**%v player(s) remain at the end of day %v:** %v",
+			len(living),
+			day+1,
+			strings.Join(livingNames, ", "),
+		),
+	}
 
 	select {
 	case <-ctx.Done():
 	default:
 		g.sendBatchOutput(output)
+		g.sendBatchOutput(dayend)
 	}
 
 	return living, nil
@@ -343,9 +348,10 @@ func (g *Game) sendTributeOutput(participants []*Participant) {
 
 	tributeLines := []string{
 		"**__Please welcome our brave tributes!__**",
-		"",
+		settings.BlankLine,
 		"What a fantastic group of individuals we have for this year's contest:",
 	}
+
 	var tributes []string
 	for _, p := range participants {
 		tributes = append(tributes, p.DisplayName())

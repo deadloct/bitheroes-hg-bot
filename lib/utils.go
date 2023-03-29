@@ -86,20 +86,6 @@ func GetRandomInt(min, max int) (int, error) {
 	return int(n.Int64()) + min, nil
 }
 
-func Headerize(str string, quoteNextLines bool) string {
-	var separator string
-	for i := 0; i < len(str); i++ {
-		separator += "-"
-	}
-
-	var prefix string
-	if quoteNextLines {
-		prefix = "> "
-	}
-
-	return fmt.Sprintf("%v\n%v%v\n%v%v", separator, prefix, str, prefix, separator)
-}
-
 func ToDoubleStruck(str string) string {
 	toDS := func(r rune) rune {
 		if v, ok := DoubleStruckMap[r]; ok {

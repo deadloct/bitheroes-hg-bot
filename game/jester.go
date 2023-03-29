@@ -50,7 +50,7 @@ func (j *Jester) StartRandomJokes(ctx context.Context, stop chan struct{}) {
 }
 
 func (j *Jester) sendJoke(msg *discordgo.Message) (*discordgo.Message, error) {
-	prefix := "Greetings, esteemed guests and citizens of the Capitol! As the royal jester to our illustrious President Snow, I stand before you today to bring some much-needed levity and humor to this esteemed gathering. I understand that some of you may be feeling impatient, but fear not! I am here to entertain you with the finest collection of dad jokes this side of the Districts."
+	intro := "Greetings, esteemed guests and citizens of the Capitol! As the royal jester to our illustrious President Snow, I stand before you today to bring some much-needed levity and humor to this esteemed gathering. I understand that some of you may be feeling impatient, but fear not! I am here to entertain you with the finest collection of dad jokes this side of the Districts."
 
 	joke, err := j.generator.GetJoke()
 	if err != nil {
@@ -58,7 +58,7 @@ func (j *Jester) sendJoke(msg *discordgo.Message) (*discordgo.Message, error) {
 		return msg, err
 	}
 
-	text := fmt.Sprintf("> %v\n> \n> *%v*\n> *%v*", prefix, joke.Question, joke.Answer)
+	text := fmt.Sprintf("> %v\n> %v\n> \n> *%v*\n> *%v*\n> %v", settings.BlankLine, intro, joke.Question, joke.Answer, settings.BlankLine)
 	if msg == nil {
 		if msg, err = j.sender.Send(text); err != nil {
 			log.Warnf("failed to send joke: %v", err)

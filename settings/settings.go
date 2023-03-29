@@ -33,7 +33,7 @@ const (
 	IntroFile   = "intro.en.template"
 	HelpFile    = "help.en.template"
 
-	DiscordMaxMessageLength = 1000
+	DiscordMaxMessageLength = 4000
 	DiscordMaxMessages      = 100
 	DiscordMaxBulkDelete    = 100
 

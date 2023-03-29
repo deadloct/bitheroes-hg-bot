@@ -19,8 +19,6 @@ func benchmarkGameRun(b *testing.B, cfg GameConfig, members []*discordgo.Member)
 	b.Helper()
 
 	sender := &BufferSender{SendLatency: 100 * time.Millisecond}
-	msgChan := sender.Start()
-	defer sender.Stop()
 
 	cfg.Sender = sender
 	g := NewGame(cfg)
@@ -29,9 +27,6 @@ func benchmarkGameRun(b *testing.B, cfg GameConfig, members []*discordgo.Member)
 	for i := 0; i < len(members); i++ {
 		g.RegisterUser("123", settings.ParticipantEmojiName, NewParticipant(members[i]))
 	}
-
-	// Hacks to avoid using g.Start, which waits for reactions
-	g.sendCh = msgChan
 
 	g.run(context.Background())
 }
@@ -114,40 +109,19 @@ func BenchmarkGameDuration(b *testing.B) {
 
 type BufferSender struct {
 	buffer      []string
-	msgCh       chan string
-	stopCh      chan struct{}
 	SendLatency time.Duration
 	sync.Mutex
 }
 
-func (b *BufferSender) Start() chan string {
-	b.msgCh = make(chan string)
-	b.stopCh = make(chan struct{})
-	go b.listen()
-	return b.msgCh
+func (b *BufferSender) SendNormal(str string) (*discordgo.Message, error) {
+	return b.send(str)
 }
 
-func (b *BufferSender) listen() {
-	for {
-		select {
-		case msg := <-b.msgCh:
-			b.Lock()
-			if msg != "" {
-				b.buffer = append(b.buffer, msg)
-			}
-			b.Unlock()
-		case <-b.stopCh:
-			return
-		}
-	}
+func (b *BufferSender) SendEmbed(str string) (*discordgo.Message, error) {
+	return b.send(str)
 }
 
-func (b *BufferSender) Stop() {
-	close(b.msgCh)
-	close(b.stopCh)
-}
-
-func (b *BufferSender) Send(str string) (*discordgo.Message, error) {
+func (b *BufferSender) send(str string) (*discordgo.Message, error) {
 	b.Lock()
 	defer b.Unlock()
 	b.buffer = append(b.buffer, str)

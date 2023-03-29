@@ -58,14 +58,15 @@ func (j *Jester) sendJoke(msg *discordgo.Message) (*discordgo.Message, error) {
 		return msg, err
 	}
 
-	text := fmt.Sprintf("> %v\n> %v\n> \n> *%v*\n> *%v*\n> %v", settings.BlankLine, intro, joke.Question, joke.Answer, settings.BlankLine)
+	text := fmt.Sprintf("%v\n\n*%v*\n*%v*", intro, joke.Question, joke.Answer)
 	if msg == nil {
-		if msg, err = j.sender.Send(text); err != nil {
+		if msg, err = j.sender.SendEmbed(text); err != nil {
 			log.Warnf("failed to send joke: %v", err)
 			return msg, err
 		}
 	} else {
-		if msg, err = j.session.ChannelMessageEdit(msg.ChannelID, msg.ID, text); err != nil {
+		embed := &discordgo.MessageEmbed{Description: text}
+		if msg, err = j.session.ChannelMessageEditEmbed(msg.ChannelID, msg.ID, embed); err != nil {
 			log.Warnf("failed to edit joke: %v", err)
 			return msg, err
 		}

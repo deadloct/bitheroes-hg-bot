@@ -50,7 +50,6 @@ type Game struct {
 
 	channelName    string
 	introMessage   *discordgo.Message
-	sendCh         chan string
 	serverName     string
 	state          GameState
 	participants   []*Participant
@@ -82,9 +81,6 @@ func NewGame(cfg GameConfig) *Game {
 }
 
 func (g *Game) Start(ctx context.Context) error {
-
-	g.sendCh = g.Sender.Start()
-
 	// This is the welcome messsage that people react to to enter.
 	intro, err := g.getIntro(settings.IntroValues{
 		Delay:       g.Delay,
@@ -97,7 +93,7 @@ func (g *Game) Start(ctx context.Context) error {
 	}
 
 	g.logMessage(log.DebugLevel, "sending intro")
-	if g.introMessage, err = g.Sender.Send(intro); err != nil {
+	if g.introMessage, err = g.Sender.SendEmbed(intro); err != nil {
 		return err
 	}
 
@@ -184,7 +180,7 @@ func (g *Game) run(ctx context.Context) {
 
 	if len(g.participants) == 0 {
 		g.logMessage(log.InfoLevel, "no users entered")
-		g.Sender.Send(fmt.Sprintf("No tributes have come forward within %v. This district will be eliminated.", g.Delay))
+		g.Sender.SendEmbed(fmt.Sprintf("No tributes have come forward within %v. This district will be eliminated.", g.Delay))
 		g.Lock()
 		g.state = Cancelled
 		g.Unlock()
@@ -226,7 +222,7 @@ func (g *Game) run(ctx context.Context) {
 			g.participants, err = g.runDay(ctx, day, g.participants)
 			if err != nil {
 				g.logMessage(log.ErrorLevel, "failed to simulate day %v: %v", day, err)
-				g.Sender.Send(fmt.Sprintf("failed to run game for day %v", day+1))
+				g.Sender.SendEmbed(fmt.Sprintf("failed to run game for day %v", day+1))
 				g.Lock()
 				g.state = Cancelled
 				g.Unlock()
@@ -243,11 +239,13 @@ func (g *Game) run(ctx context.Context) {
 		g.logMessage(log.InfoLevel, "winner: %v %v#%v %v", p.DisplayName(), p.User.Username, p.User.Discriminator, p.User.ID)
 	}
 
+	mentionStr := strings.Join(mentions, ", ")
 	g.sendBatchOutput([]string{
-		settings.BlankLine,
 		"**__This year's Hunger Games have concluded__**",
-		fmt.Sprintf("%v: %v", "Congratulations to our new victor(s)", strings.Join(mentions, ", ")),
+		fmt.Sprintf("%v: %v", "Congratulations to our new victor(s)", mentionStr),
 	})
+
+	g.Sender.SendNormal("*Notifications:* " + mentionStr)
 
 	g.Lock()
 	g.state = Finished
@@ -260,7 +258,6 @@ func (g *Game) runDay(ctx context.Context, day int, participants []*Participant)
 	}
 
 	output := []string{
-		settings.BlankLine,
 		fmt.Sprintf("**__DAY %v__**", day+1),
 		settings.BlankLine,
 	}
@@ -312,10 +309,12 @@ func (g *Game) runDay(ctx context.Context, day int, participants []*Participant)
 		}
 	}
 
+	var deathMentions []string
 	for i := range dead {
 		mention := ""
 		if g.EntryMultiplier == 1 {
 			mention = participants[i].Mention()
+			deathMentions = append(deathMentions, mention)
 		}
 
 		line := "• " + g.PhraseGenerator.GetRandomPhrase(participants[i].DisplayName(), mention, livingNames)
@@ -324,7 +323,6 @@ func (g *Game) runDay(ctx context.Context, day int, participants []*Participant)
 	}
 
 	dayend := []string{
-		settings.BlankLine,
 		fmt.Sprintf(
 			"**%v player(s) remain at the end of day %v:** %v",
 			len(living),
@@ -338,6 +336,9 @@ func (g *Game) runDay(ctx context.Context, day int, participants []*Participant)
 	default:
 		g.sendBatchOutput(output)
 		g.sendBatchOutput(dayend)
+		if g.EntryMultiplier == 1 {
+			g.Sender.SendNormal("*Notifications:* " + strings.Join(deathMentions, ", "))
+		}
 	}
 
 	return living, nil
@@ -365,18 +366,16 @@ func (g *Game) sendBatchOutput(lines []string) {
 	var output string
 
 	for _, line := range lines {
-		next := fmt.Sprintf("> %v", line)
-
-		if len(output)+len(next) > settings.DiscordMaxMessageLength {
-			g.sendCh <- output
+		if len(output)+len(line) > settings.DiscordMaxMessageLength {
+			g.Sender.SendEmbed(output)
 			output = ""
 		}
 
-		output += next + "\n"
+		output += line + "\n"
 	}
 
 	if len(output) > 0 {
-		g.sendCh <- output
+		g.Sender.SendEmbed(output)
 	}
 }
 

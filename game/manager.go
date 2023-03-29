@@ -50,16 +50,14 @@ func ManagerInstance(session *discordgo.Session) *Manager {
 
 func (m *Manager) StartGame(cfg GameStartConfig) error {
 	sender := NewDiscordSender(m.session, cfg.Channel)
-	sender.Start()
 
 	if !m.CanStart(cfg.Channel) {
 		log.Errorf("game already running in channel %v", cfg.Channel)
-		sender.Send("There is already an active Hunger Games running in this channel, please wait for it to finish or stop the existing game first.")
-		sender.Stop()
+		sender.SendEmbed("There is already an active Hunger Games running in this channel, please wait for it to finish or stop the existing game first.")
 		return fmt.Errorf("game already exists in channel %s", cfg.Channel)
 	}
 
-	sender.Send("Starting a Hunger Games event in this channel. Any existing, unstarted games will be cancelled.")
+	sender.SendEmbed("Starting a Hunger Games event in this channel. Any existing, unstarted games will be cancelled.")
 	m.EndGame(cfg.Channel)
 
 	log.Infof("starting game in channel %v", cfg.Channel)
@@ -80,8 +78,7 @@ func (m *Manager) StartGame(cfg GameStartConfig) error {
 	err := g.Start(ctx)
 	if err != nil {
 		log.Errorf("error starting game: %v", err)
-		sender.Send("There was an unexpected error starting the game.")
-		sender.Stop()
+		sender.SendEmbed("There was an unexpected error starting the game.")
 		cancel()
 		return err
 	}
@@ -115,7 +112,6 @@ func (m *Manager) EndGame(channel string) {
 	if rg, exists := m.games[channel]; exists {
 		log.Infof("ending game in channel %v", channel)
 		rg.Cancel()
-		rg.Game.Sender.Stop()
 		delete(m.games, channel)
 	}
 }

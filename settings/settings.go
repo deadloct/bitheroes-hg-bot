@@ -48,6 +48,8 @@ var (
 	ParticipantEmojiName = os.Getenv("BITHEROES_HG_BOT_EMOJI_NAME")
 	ParticipantEmojiID   = os.Getenv("BITHEROES_HG_BOT_EMOJI_ID")
 	ParticipantEmojiCode = fmt.Sprintf("<:%v:%v>", ParticipantEmojiName, ParticipantEmojiID)
+
+	DayEmoji = "skull_crossbones"
 )
 
 type IntroValues struct {

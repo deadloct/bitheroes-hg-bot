@@ -256,7 +256,15 @@ func (g *Game) runDay(ctx context.Context, day int, participants []*Participant)
 		return participants, nil
 	}
 
-	output := []string{fmt.Sprintf("**Day %v**", day+1), settings.WhiteSpaceChar}
+	output := []string{
+		fmt.Sprintf(
+			":%v:   **DAY %v**   :%v:",
+			settings.DayEmoji,
+			day+1,
+			settings.DayEmoji,
+		),
+		settings.WhiteSpaceChar,
+	}
 
 	// min and max are 0-based
 	var min int

@@ -33,11 +33,11 @@ const (
 	IntroFile   = "intro.en.template"
 	HelpFile    = "help.en.template"
 
-	DiscordMaxMessageLength = 4000
+	DiscordMaxMessageLength = 1500
 	DiscordMaxMessages      = 100
 	DiscordMaxBulkDelete    = 100
 
-	BlankLine = "** \u200d **"
+	WhiteSpaceChar = "\u200d"
 )
 
 var (

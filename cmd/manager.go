@@ -148,7 +148,7 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 
 	session.InteractionRespond(ic.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{Content: "Command acknowledged. Engaging the capitol of Panem."},
+		Data: &discordgo.InteractionResponseData{Content: "> Command acknowledged. Engaging the capitol of Panem."},
 	})
 
 	options := ic.ApplicationCommandData().Options
@@ -169,11 +169,11 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 				v := int(option.IntValue())
 				switch {
 				case v < settings.MinimumStartDelay:
-					msg := fmt.Sprintf("The delay of %v is much too short. Hunger Games will wait for %v seconds instead.", v, settings.DefaultStartDelay)
+					msg := fmt.Sprintf("> The delay of %v is much too short. Hunger Games will wait for %v seconds instead.", v, settings.DefaultStartDelay)
 					session.ChannelMessageSend(ic.ChannelID, msg)
 					log.Warn(msg)
 				case v > settings.MaximumStartDelay:
-					msg := fmt.Sprintf("The delay of %v is much too long. Hunger Games will wait for %v seconds instead.", v, settings.DefaultStartDelay)
+					msg := fmt.Sprintf("> The delay of %v is much too long. Hunger Games will wait for %v seconds instead.", v, settings.DefaultStartDelay)
 					session.ChannelMessageSend(ic.ChannelID, msg)
 					log.Warn(msg)
 				default:
@@ -185,12 +185,12 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 				switch {
 				case v < settings.MinimumEntryMultiplier:
 					entryMultiplier = settings.MinimumEntryMultiplier
-					msg := fmt.Sprintf("The multiplier of %v is much too low. Setting to %v instead.", v, settings.MinimumEntryMultiplier)
+					msg := fmt.Sprintf("> The multiplier of %v is much too low. Setting to %v instead.", v, settings.MinimumEntryMultiplier)
 					session.ChannelMessageSend(ic.ChannelID, msg)
 					log.Warn(msg)
 				case v > settings.MaximumEntryMultiplier:
 					entryMultiplier = settings.MaximumEntryMultiplier
-					msg := fmt.Sprintf("The multiplier of %v is much too high. Setting to %v instead.", v, settings.MaximumEntryMultiplier)
+					msg := fmt.Sprintf("> The multiplier of %v is much too high. Setting to %v instead.", v, settings.MaximumEntryMultiplier)
 					session.ChannelMessageSend(ic.ChannelID, msg)
 					log.Warn(msg)
 				default:
@@ -202,7 +202,7 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 				switch {
 				case v < settings.MinimumVictorCount:
 					victors = settings.DefaultVictorCount
-					msg := fmt.Sprintf("Victors of %v is much too low. Setting to %v instead.", v, settings.DefaultVictorCount)
+					msg := fmt.Sprintf("> Victors of %v is much too low. Setting to %v instead.", v, settings.DefaultVictorCount)
 					session.ChannelMessageSend(ic.ChannelID, msg)
 					log.Warn(msg)
 				default:
@@ -212,7 +212,7 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 		}
 
 		if victors == 0 {
-			session.ChannelMessageSend(ic.ChannelID, "There will be no victors this year. An uprising broke out in the underground Bit Heroes sector, but rest easy knowing that the dissidents of the uprising will be eliminated.")
+			session.ChannelMessageSend(ic.ChannelID, "> There will be no victors this year. An uprising broke out in the underground Bit Heroes sector, but rest easy knowing that the dissidents of the uprising will be eliminated.")
 			return
 		}
 
@@ -240,7 +240,7 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 
 	case CommandCancel:
 		game.ManagerInstance(session).EndGame(ic.ChannelID)
-		session.ChannelMessageSend(ic.ChannelID, "District uprising ended the games early. The dissidents of the uprising will be eliminated.")
+		session.ChannelMessageSend(ic.ChannelID, "> District uprising ended the games early. The dissidents of the uprising will be eliminated.")
 
 	case CommandClear:
 		game.ManagerInstance(session).ClearBotMessages(ic.ChannelID)

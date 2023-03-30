@@ -1,6 +1,7 @@
 package game
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -69,14 +70,16 @@ func (s *DiscordSender) splitSend(str string, send func(str string) (*discordgo.
 }
 
 func (s *DiscordSender) normal(str string) (*discordgo.Message, error) {
-	log.Tracef("sending message of length %v", len(str))
-	msg, err := s.session.ChannelMessageSend(s.channelID, str)
+	quoted := s.addBQ(str)
+	log.Tracef("sending message of length %v", len(quoted))
+	msg, err := s.session.ChannelMessageSend(s.channelID, quoted)
 	if err != nil {
-		log.Errorf("error sending message of length %v: %v", len(str), err)
+		log.Errorf("error sending message of length %v: %v", len(quoted), err)
 	} else {
-		log.Tracef("successfully sent message of length %v", len(str))
+		log.Tracef("successfully sent message of length %v", len(quoted))
 	}
 
+	err = errors.Join(err, s.sendBlankLine())
 	return msg, err
 }
 
@@ -91,5 +94,28 @@ func (s *DiscordSender) embed(str string) (*discordgo.Message, error) {
 		log.Tracef("successfully sent message of length %v", len(str))
 	}
 
+	err = errors.Join(err, s.sendBlankLine())
 	return msg, err
+}
+
+func (s *DiscordSender) sendBlankLine() error {
+	_, err := s.session.ChannelMessageSend(s.channelID, settings.WhiteSpaceChar)
+	if err != nil {
+		log.Errorf("error sending blank line: %v", err)
+	}
+
+	return err
+}
+
+func (s *DiscordSender) addBQ(str string) string {
+	parts := strings.Split(str, "\n")
+	var output []string
+	for _, s := range parts {
+		if len(parts) == 0 {
+			continue
+		}
+
+		output = append(output, "> "+s)
+	}
+	return strings.Join(output, "\n")
 }

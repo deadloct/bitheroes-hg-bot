@@ -53,11 +53,11 @@ func (m *Manager) StartGame(cfg GameStartConfig) error {
 
 	if !m.CanStart(cfg.Channel) {
 		log.Errorf("game already running in channel %v", cfg.Channel)
-		sender.SendEmbed("There is already an active Hunger Games running in this channel, please wait for it to finish or stop the existing game first.")
+		sender.SendNormal("There is already an active Hunger Games running in this channel, please wait for it to finish or stop the existing game first.")
 		return fmt.Errorf("game already exists in channel %s", cfg.Channel)
 	}
 
-	sender.SendEmbed("Starting a Hunger Games event in this channel. Any existing, unstarted games will be cancelled.")
+	sender.SendNormal("Starting a Hunger Games event in this channel. Any existing, unstarted games will be cancelled.")
 	m.EndGame(cfg.Channel)
 
 	log.Infof("starting game in channel %v", cfg.Channel)
@@ -78,7 +78,7 @@ func (m *Manager) StartGame(cfg GameStartConfig) error {
 	err := g.Start(ctx)
 	if err != nil {
 		log.Errorf("error starting game: %v", err)
-		sender.SendEmbed("There was an unexpected error starting the game.")
+		sender.SendNormal("There was an unexpected error starting the game.")
 		cancel()
 		return err
 	}

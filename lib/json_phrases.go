@@ -40,7 +40,7 @@ func (jp *JSONPhrases) GetRandomPhrase(user string, mention string, living []str
 		return defaultPhrase
 	}
 
-	dyingName := fmt.Sprintf("**%v**", user)
+	dyingName := fmt.Sprintf("*%v*", user)
 	if mention != "" {
 		dyingName = mention
 	}

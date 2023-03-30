@@ -241,7 +241,8 @@ func (g *Game) run(ctx context.Context) {
 
 	mentionStr := strings.Join(mentions, ", ")
 	g.sendBatchOutput([]string{
-		"**__This year's Hunger Games have concluded__**",
+		"**This year's Hunger Games have concluded**",
+		settings.WhiteSpaceChar,
 		fmt.Sprintf("%v: %v", "Congratulations to our new victor(s)", mentionStr),
 	})
 
@@ -255,7 +256,7 @@ func (g *Game) runDay(ctx context.Context, day int, participants []*Participant)
 		return participants, nil
 	}
 
-	output := []string{fmt.Sprintf("**__DAY %v__**", day+1), settings.WhiteSpaceChar}
+	output := []string{fmt.Sprintf("**Day %v**", day+1), settings.WhiteSpaceChar}
 
 	// min and max are 0-based
 	var min int
@@ -274,7 +275,7 @@ func (g *Game) runDay(ctx context.Context, day int, participants []*Participant)
 	}
 
 	if killCount == 0 {
-		output = append(output, fmt.Sprintf("**All was quiet on day %v.**", day+1))
+		output = append(output, fmt.Sprintf("All was quiet on day %v.", day+1))
 		g.sendBatchOutput(output)
 		return participants, nil
 	}
@@ -316,7 +317,7 @@ func (g *Game) runDay(ctx context.Context, day int, participants []*Participant)
 	}
 
 	output = append(output, settings.WhiteSpaceChar, fmt.Sprintf(
-		"**%v player(s) remain at the end of day %v:** %v",
+		"%v player(s) remain at the end of day %v: %v",
 		len(living),
 		day+1,
 		strings.Join(livingNames, ", "),
@@ -335,10 +336,9 @@ func (g *Game) sendTributeOutput(participants []*Participant) {
 	g.logMessage(log.DebugLevel, "tribute count: %v", len(participants))
 
 	tributeLines := []string{
-		"**__Please welcome our brave tributes!__**",
+		"**Please welcome our brave tributes!**",
 		settings.WhiteSpaceChar,
 		"What a fantastic group of individuals we have for this year's contest:",
-		settings.WhiteSpaceChar,
 	}
 
 	var tributes []string

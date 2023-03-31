@@ -33,7 +33,6 @@ type JokeGenerator interface {
 }
 
 type GameConfig struct {
-	Author          *Participant
 	ChannelID       string
 	DayDelay        time.Duration
 	Delay           time.Duration // delayed start
@@ -42,6 +41,7 @@ type GameConfig struct {
 	PhraseGenerator PhraseGenerator
 	Sender          Sender
 	Session         *discordgo.Session
+	Sponsor         string
 	VictorCount     int
 }
 
@@ -85,7 +85,7 @@ func (g *Game) Start(ctx context.Context) error {
 	intro, err := g.getIntro(settings.IntroValues{
 		Delay:       g.Delay,
 		EmojiCode:   settings.ParticipantEmojiCode,
-		User:        g.Author.DisplayName(),
+		Sponsor:     g.Sponsor,
 		VictorCount: g.VictorCount,
 	})
 	if err != nil {

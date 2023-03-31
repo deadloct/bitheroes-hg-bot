@@ -17,12 +17,12 @@ type RunningGame struct {
 }
 
 type GameStartConfig struct {
-	Author          *discordgo.Member
 	Channel         string
 	Delay           time.Duration
+	EntryMultiplier int
 	JokeGenerator   JokeGenerator
 	PhraseGenerator PhraseGenerator
-	EntryMultiplier int
+	Sponsor         string
 	VictorCount     int
 }
 
@@ -63,13 +63,13 @@ func (m *Manager) StartGame(cfg GameStartConfig) error {
 	log.Infof("starting game in channel %v", cfg.Channel)
 
 	g := NewGame(GameConfig{
-		Author:          NewParticipant(cfg.Author),
 		Delay:           cfg.Delay,
 		EntryMultiplier: cfg.EntryMultiplier,
 		JokeGenerator:   cfg.JokeGenerator,
 		PhraseGenerator: cfg.PhraseGenerator,
 		Sender:          sender,
 		Session:         m.session,
+		Sponsor:         cfg.Sponsor,
 		VictorCount:     cfg.VictorCount,
 	})
 

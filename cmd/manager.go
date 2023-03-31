@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -18,9 +19,12 @@ const (
 	CommandStartOptionStartDelay      = "start-delay"
 	CommandStartOptionEntryMultiplier = "entry-multiplier"
 	CommandStartOptionVictorCount     = "victors"
+	CommandStartOptionSponsor         = "sponsor"
 	CommandCancel                     = CommandPrefix + "cancel"
 	CommandClear                      = CommandPrefix + "clear"
 )
+
+var nonAlphanumericRegex = regexp.MustCompile(`[^\p{L}\p{N}-_\.]+`)
 
 var commands = []*discordgo.ApplicationCommand{
 	{
@@ -50,6 +54,12 @@ var commands = []*discordgo.ApplicationCommand{
 					"Number of victors (winners). Default: %v, Min: %v",
 					settings.DefaultVictorCount, settings.DefaultVictorCount),
 				Required: false,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        CommandStartOptionSponsor,
+				Description: "The sponsor of the event. Default: user running this command",
+				Required:    false,
 			},
 		},
 	},
@@ -162,6 +172,7 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 		delay := settings.DefaultStartDelay * time.Second
 		entryMultiplier := settings.DefaultEntryMultiplier
 		victors := settings.DefaultVictorCount
+		sponsor := game.NewParticipant(ic.Member).DisplayName()
 
 		for _, option := range options {
 			switch option.Name {
@@ -208,6 +219,12 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 				default:
 					victors = v
 				}
+
+			case CommandStartOptionSponsor:
+				v := option.StringValue()
+				if v != "" {
+					sponsor = m.sanitize(v)
+				}
 			}
 		}
 
@@ -225,12 +242,12 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 		}
 
 		cfg := game.GameStartConfig{
-			Author:          ic.Member,
 			Channel:         ic.ChannelID,
 			Delay:           delay,
 			EntryMultiplier: entryMultiplier,
 			JokeGenerator:   jj,
 			PhraseGenerator: jp,
+			Sponsor:         sponsor,
 			VictorCount:     victors,
 		}
 
@@ -245,4 +262,8 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 	case CommandClear:
 		game.ManagerInstance(session).ClearBotMessages(ic.ChannelID)
 	}
+}
+
+func (m *Manager) sanitize(str string) string {
+	return nonAlphanumericRegex.ReplaceAllString(str, "")
 }

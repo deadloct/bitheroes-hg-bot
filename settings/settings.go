@@ -55,7 +55,7 @@ var (
 type IntroValues struct {
 	Delay       time.Duration
 	EmojiCode   string
-	User        string
+	Sponsor     string
 	VictorCount int
 }
 

@@ -89,14 +89,11 @@ func BenchmarkGameDuration(b *testing.B) {
 				benchmarkGameRun(
 					b,
 					GameConfig{
-						Author: NewParticipant(&discordgo.Member{
-							Nick: "Sponsor",
-							User: &discordgo.User{Username: "sponsor", ID: "123"},
-						}),
 						ChannelID:       "123",
 						DayDelay:        1 * time.Nanosecond,
 						PhraseGenerator: jp,
 						Session:         &discordgo.Session{},
+						Sponsor:         "Sponsor",
 						EntryMultiplier: test.EntryMultiplier,
 						VictorCount:     1,
 					},

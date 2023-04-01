@@ -15,6 +15,8 @@ type Sender interface {
 	SendEmbed(str string) (*discordgo.Message, error)
 }
 
+type SendingFunc func(str string) (*discordgo.Message, error)
+
 type DiscordSender struct {
 	channelID string
 	session   *discordgo.Session
@@ -28,16 +30,59 @@ func NewDiscordSender(session *discordgo.Session, channelID string) *DiscordSend
 }
 
 func (s *DiscordSender) SendNormal(str string) (*discordgo.Message, error) {
-	return s.splitSend(str, s.normal)
+	return s.sendBlock(str, s.normal)
 }
 
 func (s *DiscordSender) SendEmbed(str string) (*discordgo.Message, error) {
-	return s.splitSend(str, s.embed)
+	return s.sendBlock(str, s.embed)
 }
 
-func (s *DiscordSender) splitSend(str string, send func(str string) (*discordgo.Message, error)) (*discordgo.Message, error) {
+func (s *DiscordSender) sendBlock(str string, sender SendingFunc) (*discordgo.Message, error) {
+	lines := strings.Split(str, "\n")
+
+	var (
+		msg     *discordgo.Message
+		errs    []error
+		err     error
+		payload string
+	)
+
+	for i := 0; i < len(lines); i++ {
+		if len(lines[i]) > settings.DiscordMaxMessageLength {
+			if payload != "" {
+				msg, err = sender(payload)
+				errs = append(errs, err)
+				payload = ""
+			}
+
+			s.sendLine(lines[i], sender)
+			continue
+		}
+
+		if len(payload)+len(lines[i])+1 >= settings.DiscordMaxMessageLength {
+			msg, err = sender(payload)
+			errs = append(errs, err)
+			payload = ""
+		}
+
+		if payload == "" {
+			payload = lines[i]
+		} else {
+			payload = fmt.Sprintf("%s\n%s", payload, lines[i])
+		}
+	}
+
+	if payload != "" {
+		msg, err = sender(payload)
+		errs = append(errs, err)
+	}
+
+	return msg, errors.Join(errs...)
+}
+
+func (s *DiscordSender) sendLine(str string, sender SendingFunc) (*discordgo.Message, error) {
 	if len(str) <= settings.DiscordMaxMessageLength {
-		return send(str)
+		return sender(str)
 	}
 
 	words := strings.Fields(str)
@@ -49,19 +94,23 @@ func (s *DiscordSender) splitSend(str string, send func(str string) (*discordgo.
 
 	for _, word := range words {
 		// Space character between line and word is why this uses >= instead of >
-		if len(line)+len(word) >= settings.DiscordMaxMessageLength {
-			if msg, err = send(line); err != nil {
+		if len(line)+len(word)+1 >= settings.DiscordMaxMessageLength {
+			if msg, err = sender(line); err != nil {
 				return nil, err
 			}
 
 			line = ""
 		}
 
-		line = fmt.Sprintf("%s%s%s", line, " ", word)
+		if line == "" {
+			line = word
+		} else {
+			line = fmt.Sprintf("%s %s", line, word)
+		}
 	}
 
 	if len(line) > 0 {
-		if msg, err = send(line); err != nil {
+		if msg, err = sender(line); err != nil {
 			return nil, err
 		}
 	}

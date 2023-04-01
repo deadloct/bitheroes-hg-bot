@@ -183,7 +183,7 @@ func (g *Game) run(ctx context.Context) {
 
 	if len(g.participants) == 0 {
 		g.logMessage(log.InfoLevel, "no users entered")
-		g.Sender.SendNormal(fmt.Sprintf("No tributes have come forward within %v. This district will be eliminated.", g.Delay))
+		g.Sender.SendQuoted(fmt.Sprintf("No tributes have come forward within %v. This district will be eliminated.", g.Delay))
 		g.Lock()
 		g.state = Cancelled
 		g.Unlock()
@@ -226,7 +226,7 @@ func (g *Game) run(ctx context.Context) {
 			g.participants, err = g.runDay(ctx, day, g.participants)
 			if err != nil {
 				g.logMessage(log.ErrorLevel, "failed to simulate day %v: %v", day, err)
-				g.Sender.SendNormal(fmt.Sprintf("failed to run game for day %v", day+1))
+				g.Sender.SendQuoted(fmt.Sprintf("failed to run game for day %v", day+1))
 				g.Lock()
 				g.state = Cancelled
 				g.Unlock()
@@ -245,7 +245,7 @@ func (g *Game) run(ctx context.Context) {
 
 	mentionStr := strings.Join(mentions, ", ")
 	g.sendBatchOutput([]string{
-		fmt.Sprintf("**This year's Hunger Games, sponsored by %v, have concluded**", g.Sponsor),
+		fmt.Sprintf("**This year's Hunger Games, sponsored by %v, have concluded!**", g.Sponsor),
 		settings.WhiteSpaceChar,
 		fmt.Sprintf("%v: %v", "Congratulations to our new victor(s)", mentionStr),
 	})
@@ -317,16 +317,21 @@ func (g *Game) runDay(ctx context.Context, day int, participants []*Participant)
 		}
 	}
 
+	var deadNames []string
 	for i := range dead {
+		deadNames = append(deadNames, participants[i].DisplayName())
+
 		mention := ""
 		if g.Clone == 1 {
 			mention = participants[i].Mention()
 		}
 
 		line := "• " + g.PhraseGenerator.GetRandomPhrase(participants[i].DisplayName(), mention, livingNames)
-		g.logMessage(log.DebugLevel, "Day %v: %v", day, line)
+		g.logMessage(log.TraceLevel, "Day %v: %v", day, line)
 		output = append(output, line)
 	}
+
+	g.logMessage(log.DebugLevel, "Dead players after day %v: %v", day+1, strings.Join(deadNames, ", "))
 
 	output = append(output, settings.WhiteSpaceChar, fmt.Sprintf(
 		"%v player(s) remain at the end of day %v: %v",
@@ -372,23 +377,23 @@ func (g *Game) sendTributeOutput(participants []*Participant) {
 }
 
 func (g *Game) sendBatchOutput(lines []string) {
-	g.Sender.SendNormal(strings.Join(lines, "\n"))
+	g.Sender.SendQuoted(strings.Join(lines, "\n"))
 }
 
 func (g *Game) logMessage(level log.Level, msg string, args ...interface{}) {
-	suffix := fmt.Sprintf(" (server:'%s' channel:'%s')", g.serverName, g.channelName)
+	// msg = fmt.Sprintf("%v (server:'%s' channel:'%s')", msg, g.serverName, g.channelName)
 	switch level {
 	case log.TraceLevel:
-		log.Tracef(msg+suffix, args...)
+		log.Tracef(msg, args...)
 	case log.DebugLevel:
-		log.Debugf(msg+suffix, args...)
+		log.Debugf(msg, args...)
 	case log.InfoLevel:
-		log.Infof(msg+suffix, args...)
+		log.Infof(msg, args...)
 	case log.WarnLevel:
-		log.Warnf(msg+suffix, args...)
+		log.Warnf(msg, args...)
 	case log.ErrorLevel:
-		log.Errorf(msg+suffix, args...)
+		log.Errorf(msg, args...)
 	case log.PanicLevel:
-		log.Panicf(msg+suffix, args...)
+		log.Panicf(msg, args...)
 	}
 }

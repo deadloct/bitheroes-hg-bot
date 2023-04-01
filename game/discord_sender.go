@@ -11,7 +11,7 @@ import (
 )
 
 type Sender interface {
-	SendNormal(str string) (*discordgo.Message, error)
+	SendQuoted(str string) (*discordgo.Message, error)
 	SendEmbed(str string) (*discordgo.Message, error)
 }
 
@@ -29,15 +29,15 @@ func NewDiscordSender(session *discordgo.Session, channelID string) *DiscordSend
 	}
 }
 
-func (s *DiscordSender) SendNormal(str string) (*discordgo.Message, error) {
-	return s.sendBlock(str, s.normal)
+func (s *DiscordSender) SendQuoted(str string) (*discordgo.Message, error) {
+	return s.send(str, s.flushQuoted)
 }
 
 func (s *DiscordSender) SendEmbed(str string) (*discordgo.Message, error) {
-	return s.sendBlock(str, s.embed)
+	return s.send(str, s.flushEmbed)
 }
 
-func (s *DiscordSender) sendBlock(str string, sender SendingFunc) (*discordgo.Message, error) {
+func (s *DiscordSender) send(str string, sender SendingFunc) (*discordgo.Message, error) {
 	lines := strings.Split(str, "\n")
 
 	var (
@@ -48,32 +48,35 @@ func (s *DiscordSender) sendBlock(str string, sender SendingFunc) (*discordgo.Me
 	)
 
 	for i := 0; i < len(lines); i++ {
-		if len(lines[i]) > settings.DiscordMaxMessageLength {
-			if payload != "" {
-				msg, err = sender(payload)
-				errs = append(errs, err)
-				payload = ""
+		nextlen := len(payload) + len(lines[i]) + 1
+		if nextlen < settings.MaxMsgLen {
+			switch payload {
+			case "":
+				payload = lines[i]
+			default:
+				payload = fmt.Sprintf("%s\n%s", payload, lines[i])
 			}
 
-			s.sendLine(lines[i], sender)
 			continue
 		}
 
-		if len(payload)+len(lines[i])+1 >= settings.DiscordMaxMessageLength {
-			msg, err = sender(payload)
+		if payload != "" {
+			// a blankline will be sent in between messages anyway, so don't double up.
+			lastline := lines[i-1]
+			if lastline == settings.WhiteSpaceChar {
+				payload = strings.TrimSuffix(payload, fmt.Sprintf("\n%s", settings.WhiteSpaceChar))
+			}
+
+			payload = strings.TrimSuffix(payload, "\n")
+			_, err = s.sendLine(payload, sender)
 			errs = append(errs, err)
-			payload = ""
 		}
 
-		if payload == "" {
-			payload = lines[i]
-		} else {
-			payload = fmt.Sprintf("%s\n%s", payload, lines[i])
-		}
+		payload = lines[i]
 	}
 
 	if payload != "" {
-		msg, err = sender(payload)
+		msg, err = s.sendLine(payload, sender)
 		errs = append(errs, err)
 	}
 
@@ -81,7 +84,7 @@ func (s *DiscordSender) sendBlock(str string, sender SendingFunc) (*discordgo.Me
 }
 
 func (s *DiscordSender) sendLine(str string, sender SendingFunc) (*discordgo.Message, error) {
-	if len(str) <= settings.DiscordMaxMessageLength {
+	if len(str) <= settings.MaxMsgLen {
 		return sender(str)
 	}
 
@@ -94,7 +97,7 @@ func (s *DiscordSender) sendLine(str string, sender SendingFunc) (*discordgo.Mes
 
 	for _, word := range words {
 		// Space character between line and word is why this uses >= instead of >
-		if len(line)+len(word)+1 >= settings.DiscordMaxMessageLength {
+		if len(line)+len(word)+1 >= settings.MaxMsgLen {
 			if msg, err = sender(line); err != nil {
 				return nil, err
 			}
@@ -118,7 +121,7 @@ func (s *DiscordSender) sendLine(str string, sender SendingFunc) (*discordgo.Mes
 	return msg, nil
 }
 
-func (s *DiscordSender) normal(str string) (*discordgo.Message, error) {
+func (s *DiscordSender) flushQuoted(str string) (*discordgo.Message, error) {
 	quoted := s.addBQ(str)
 	log.Tracef("sending message of length %v", len(quoted))
 	msg, err := s.session.ChannelMessageSend(s.channelID, quoted)
@@ -132,7 +135,7 @@ func (s *DiscordSender) normal(str string) (*discordgo.Message, error) {
 	return msg, err
 }
 
-func (s *DiscordSender) embed(str string) (*discordgo.Message, error) {
+func (s *DiscordSender) flushEmbed(str string) (*discordgo.Message, error) {
 	log.Tracef("sending message of length %v", len(str))
 	msg, err := s.session.ChannelMessageSendEmbed(s.channelID, &discordgo.MessageEmbed{
 		Description: str,

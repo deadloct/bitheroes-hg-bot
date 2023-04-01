@@ -18,7 +18,7 @@ const (
 	EnableClone  = true
 	DefaultClone = 1
 	MinimumClone = 1
-	MaximumClone = 1000
+	MaximumClone = 100
 
 	DefaultDayDelay    = 5 * time.Second
 	DefaultVictorCount = 1
@@ -31,9 +31,9 @@ const (
 	IntroFile   = "intro.en.template"
 	HelpFile    = "help.en.template"
 
-	DiscordMaxMessageLength = 1500
-	DiscordMaxMessages      = 100
-	DiscordMaxBulkDelete    = 100
+	MaxMsgLen            = 1500
+	DiscordMaxMessages   = 100
+	DiscordMaxBulkDelete = 100
 
 	WhiteSpaceChar = "\u200d"
 

@@ -24,7 +24,7 @@ const (
 	CommandClear                  = CommandPrefix + "clear"
 )
 
-var nonAlphanumericRegex = regexp.MustCompile(`[^\p{L}\p{N}-_\.]+`)
+var nonAlphanumericRegex = regexp.MustCompile(`[^\p{L}\p{N}-_\.\[\] ]+`)
 
 var commands = []*discordgo.ApplicationCommand{
 	{

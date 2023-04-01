@@ -21,7 +21,7 @@ func init() {
 }
 
 func main() {
-	session, err := discordgo.New("Bot " + os.Getenv("BITHEROES_HG_BOT_AUTH_TOKEN"))
+	session, err := discordgo.New("Bot " + settings.AuthToken)
 	if err != nil {
 		log.Panic(err)
 	}

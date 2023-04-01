@@ -36,7 +36,7 @@ type GameConfig struct {
 	ChannelID       string
 	DayDelay        time.Duration
 	Delay           time.Duration // delayed start
-	EntryMultiplier int
+	Clone           int
 	JokeGenerator   JokeGenerator
 	PhraseGenerator PhraseGenerator
 	Sender          Sender
@@ -81,10 +81,12 @@ func NewGame(cfg GameConfig) *Game {
 }
 
 func (g *Game) Start(ctx context.Context) error {
+	participantEmoji := settings.GetEmoji(settings.EmojiParticipant)
+
 	// This is the welcome messsage that people react to to enter.
 	intro, err := g.getIntro(settings.IntroValues{
 		Delay:       g.Delay,
-		EmojiCode:   settings.ParticipantEmojiCode,
+		EmojiCode:   participantEmoji.EmojiCode(),
 		Sponsor:     g.Sponsor,
 		VictorCount: g.VictorCount,
 	})
@@ -98,7 +100,7 @@ func (g *Game) Start(ctx context.Context) error {
 	}
 
 	g.Session.MessageReactionAdd(g.introMessage.ChannelID, g.introMessage.ID,
-		fmt.Sprintf("%v:%v", settings.ParticipantEmojiName, settings.ParticipantEmojiID))
+		fmt.Sprintf("%v:%v", participantEmoji.Name, participantEmoji.ID))
 
 	g.delayedStart(ctx)
 	return nil
@@ -123,7 +125,8 @@ func (g *Game) RegisterUser(messageID, emoji string, participant *Participant) {
 		return
 	}
 
-	if emoji != settings.ParticipantEmojiName {
+	participantEmoji := settings.GetEmoji(settings.EmojiParticipant)
+	if emoji != participantEmoji.Name {
 		return
 	}
 
@@ -187,9 +190,12 @@ func (g *Game) run(ctx context.Context) {
 		return
 	}
 
-	if g.EntryMultiplier > 1 {
+	g.sendTributeOutput(g.participants)
+
+	// Clone tributes
+	if g.Clone > 1 {
 		for _, p := range g.participants {
-			for i := 2; i <= g.EntryMultiplier; i++ {
+			for i := 2; i <= g.Clone; i++ {
 				name := fmt.Sprintf("%v-%v", p.DisplayName(), i)
 				g.participants = append(g.participants, NewParticipant(&discordgo.Member{
 					Nick: name,
@@ -202,8 +208,6 @@ func (g *Game) run(ctx context.Context) {
 			}
 		}
 	}
-
-	g.sendTributeOutput(g.participants)
 
 	for day := 0; len(g.participants) > g.VictorCount; day++ {
 		time.Sleep(g.DayDelay)
@@ -241,7 +245,7 @@ func (g *Game) run(ctx context.Context) {
 
 	mentionStr := strings.Join(mentions, ", ")
 	g.sendBatchOutput([]string{
-		"**This year's Hunger Games have concluded**",
+		fmt.Sprintf("**This year's Hunger Games, sponsored by %v, have concluded**", g.Sponsor),
 		settings.WhiteSpaceChar,
 		fmt.Sprintf("%v: %v", "Congratulations to our new victor(s)", mentionStr),
 	})
@@ -315,7 +319,7 @@ func (g *Game) runDay(ctx context.Context, day int, participants []*Participant)
 
 	for i := range dead {
 		mention := ""
-		if g.EntryMultiplier == 1 {
+		if g.Clone == 1 {
 			mention = participants[i].Mention()
 		}
 
@@ -355,6 +359,15 @@ func (g *Game) sendTributeOutput(participants []*Participant) {
 	}
 
 	tributeLines = append(tributeLines, strings.Join(tributes, ", "))
+
+	if g.Clone > 1 {
+		cloneEmoji := settings.GetEmoji(settings.EmojiClone)
+		cloneCode := cloneEmoji.EmojiCode()
+		tributeLines = append(tributeLines, settings.WhiteSpaceChar, fmt.Sprintf(
+			"%s   **MEGA HG MODE ACTIVATED -- TRIBUTES WILL BE CLONED %v TIMES**   %v",
+			cloneCode, g.Clone, cloneCode))
+	}
+
 	g.sendBatchOutput(tributeLines)
 }
 

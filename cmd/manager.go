@@ -13,15 +13,15 @@ import (
 )
 
 const (
-	CommandPrefix                     = "hg-"
-	CommandHelp                       = CommandPrefix + "help"
-	CommandStart                      = CommandPrefix + "start"
-	CommandStartOptionStartDelay      = "start-delay"
-	CommandStartOptionEntryMultiplier = "entry-multiplier"
-	CommandStartOptionVictorCount     = "victors"
-	CommandStartOptionSponsor         = "sponsor"
-	CommandCancel                     = CommandPrefix + "cancel"
-	CommandClear                      = CommandPrefix + "clear"
+	CommandPrefix                 = "hg-"
+	CommandHelp                   = CommandPrefix + "help"
+	CommandStart                  = CommandPrefix + "start"
+	CommandStartOptionStartDelay  = "start-delay"
+	CommandStartOptionClone       = "clone"
+	CommandStartOptionVictorCount = "victors"
+	CommandStartOptionSponsor     = "sponsor"
+	CommandCancel                 = CommandPrefix + "cancel"
+	CommandClear                  = CommandPrefix + "clear"
 )
 
 var nonAlphanumericRegex = regexp.MustCompile(`[^\p{L}\p{N}-_\.]+`)
@@ -75,15 +75,15 @@ var commands = []*discordgo.ApplicationCommand{
 
 func init() {
 	// Debug option to amplify entries
-	if settings.EnableEntryMultiplier {
+	if settings.EnableClone {
 		for _, command := range commands {
 			if command.Name == CommandStart {
 				command.Options = append(command.Options, &discordgo.ApplicationCommandOption{
 					Type: discordgo.ApplicationCommandOptionInteger,
-					Name: CommandStartOptionEntryMultiplier,
+					Name: CommandStartOptionClone,
 					Description: fmt.Sprintf(
 						"Number of entries per tribute. Default: %v, Min: %v, Max: %v",
-						settings.DefaultEntryMultiplier, settings.MinimumEntryMultiplier, settings.MaximumEntryMultiplier),
+						settings.DefaultClone, settings.MinimumClone, settings.MaximumClone),
 					Required: false,
 				})
 			}
@@ -170,7 +170,7 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 
 	case CommandStart:
 		delay := settings.DefaultStartDelay * time.Second
-		entryMultiplier := settings.DefaultEntryMultiplier
+		clone := settings.DefaultClone
 		victors := settings.DefaultVictorCount
 		sponsor := game.NewParticipant(ic.Member).DisplayName()
 
@@ -191,21 +191,21 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 					delay = time.Duration(v) * time.Second
 				}
 
-			case CommandStartOptionEntryMultiplier:
+			case CommandStartOptionClone:
 				v := int(option.IntValue())
 				switch {
-				case v < settings.MinimumEntryMultiplier:
-					entryMultiplier = settings.MinimumEntryMultiplier
-					msg := fmt.Sprintf("> The multiplier of %v is much too low. Setting to %v instead.", v, settings.MinimumEntryMultiplier)
+				case v < settings.MinimumClone:
+					clone = settings.MinimumClone
+					msg := fmt.Sprintf("> The multiplier of %v is much too low. Setting to %v instead.", v, settings.MinimumClone)
 					session.ChannelMessageSend(ic.ChannelID, msg)
 					log.Warn(msg)
-				case v > settings.MaximumEntryMultiplier:
-					entryMultiplier = settings.MaximumEntryMultiplier
-					msg := fmt.Sprintf("> The multiplier of %v is much too high. Setting to %v instead.", v, settings.MaximumEntryMultiplier)
+				case v > settings.MaximumClone:
+					clone = settings.MaximumClone
+					msg := fmt.Sprintf("> The multiplier of %v is much too high. Setting to %v instead.", v, settings.MaximumClone)
 					session.ChannelMessageSend(ic.ChannelID, msg)
 					log.Warn(msg)
 				default:
-					entryMultiplier = v
+					clone = v
 				}
 
 			case CommandStartOptionVictorCount:
@@ -244,7 +244,7 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 		cfg := game.GameStartConfig{
 			Channel:         ic.ChannelID,
 			Delay:           delay,
-			EntryMultiplier: entryMultiplier,
+			Clone:           clone,
 			JokeGenerator:   jj,
 			PhraseGenerator: jp,
 			Sponsor:         sponsor,

@@ -24,8 +24,9 @@ func benchmarkGameRun(b *testing.B, cfg GameConfig, members []*discordgo.Member)
 	g := NewGame(cfg)
 	g.introMessage = &discordgo.Message{ID: "123"}
 
+	emoji := settings.GetEmoji(settings.EmojiParticipant).Name
 	for i := 0; i < len(members); i++ {
-		g.RegisterUser("123", settings.ParticipantEmojiName, NewParticipant(members[i]))
+		g.RegisterUser("123", emoji, NewParticipant(members[i]))
 	}
 
 	g.run(context.Background())
@@ -56,34 +57,34 @@ func benchmarkSetup(b *testing.B, userCount, multiplier int) (PhraseGenerator, [
 
 func BenchmarkGameDuration(b *testing.B) {
 	tests := map[string]struct {
-		UserCount       int
-		EntryMultiplier int
+		UserCount int
+		Clone     int
 	}{
 		"1 user, 1 multiplier": {
-			UserCount:       1,
-			EntryMultiplier: 1,
+			UserCount: 1,
+			Clone:     1,
 		},
 		"100 users, 1 multiplier": {
-			UserCount:       100,
-			EntryMultiplier: 1,
+			UserCount: 100,
+			Clone:     1,
 		},
 		"1 user, 100 multiplier": {
-			UserCount:       1,
-			EntryMultiplier: 100,
+			UserCount: 1,
+			Clone:     100,
 		},
 		"100 users, 100 multiplier": {
-			UserCount:       100,
-			EntryMultiplier: 100,
+			UserCount: 100,
+			Clone:     100,
 		},
 		"1000 users, 1 multiplier": {
-			UserCount:       1000,
-			EntryMultiplier: 1,
+			UserCount: 1000,
+			Clone:     1,
 		},
 	}
 
 	for name, test := range tests {
 		b.Run(name, func(b *testing.B) {
-			jp, users := benchmarkSetup(b, test.UserCount, test.EntryMultiplier)
+			jp, users := benchmarkSetup(b, test.UserCount, test.Clone)
 
 			for i := 0; i < b.N; i++ {
 				benchmarkGameRun(
@@ -94,7 +95,7 @@ func BenchmarkGameDuration(b *testing.B) {
 						PhraseGenerator: jp,
 						Session:         &discordgo.Session{},
 						Sponsor:         "Sponsor",
-						EntryMultiplier: test.EntryMultiplier,
+						Clone:           test.Clone,
 						VictorCount:     1,
 					},
 					users,

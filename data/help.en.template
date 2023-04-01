@@ -11,7 +11,7 @@ This command has the following optional parameters:
 
 • `victors`: The number of winners. Default: 1, Minimum: 1, Maximum: anything, although it will be the number of people who enter.
 
-• `entry-multiplier`: Enter each participant this many times. Disables mentions on deaths to prevent notification spam. Default: 1, Minimum: 1, Maximum: 100.
+• `clone`: Clone each participant this many times. Disables mentions on deaths to prevent notification spam. Default: 1, Minimum: 1, Maximum: 100.
 
 **=========**
 **/hg-clear**

@@ -19,7 +19,7 @@ type RunningGame struct {
 type GameStartConfig struct {
 	Channel         string
 	Delay           time.Duration
-	EntryMultiplier int
+	Clone           int
 	JokeGenerator   JokeGenerator
 	PhraseGenerator PhraseGenerator
 	Sponsor         string
@@ -64,7 +64,7 @@ func (m *Manager) StartGame(cfg GameStartConfig) error {
 
 	g := NewGame(GameConfig{
 		Delay:           cfg.Delay,
-		EntryMultiplier: cfg.EntryMultiplier,
+		Clone:           cfg.Clone,
 		JokeGenerator:   cfg.JokeGenerator,
 		PhraseGenerator: cfg.PhraseGenerator,
 		Sender:          sender,

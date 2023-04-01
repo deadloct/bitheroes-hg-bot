@@ -1,9 +1,7 @@
 package settings
 
 import (
-	"fmt"
 	"io/ioutil"
-	"os"
 	"path"
 	"text/template"
 	"time"
@@ -17,10 +15,10 @@ const (
 	MinimumStartDelay = 5
 	MaximumStartDelay = 60 * 60 // 60 minutes in seconds
 
-	EnableEntryMultiplier  = true
-	DefaultEntryMultiplier = 1
-	MinimumEntryMultiplier = 1
-	MaximumEntryMultiplier = 100
+	EnableClone  = true
+	DefaultClone = 1
+	MinimumClone = 1
+	MaximumClone = 1000
 
 	DefaultDayDelay    = 5 * time.Second
 	DefaultVictorCount = 1
@@ -38,18 +36,14 @@ const (
 	DiscordMaxBulkDelete    = 100
 
 	WhiteSpaceChar = "\u200d"
+
+	DataLocation = "data"
+	DayEmoji     = "skull_crossbones"
 )
 
 var (
 	Intro *template.Template
 	Help  string // not currently a template
-
-	DataLocation         = "data"
-	ParticipantEmojiName = os.Getenv("BITHEROES_HG_BOT_EMOJI_NAME")
-	ParticipantEmojiID   = os.Getenv("BITHEROES_HG_BOT_EMOJI_ID")
-	ParticipantEmojiCode = fmt.Sprintf("<:%v:%v>", ParticipantEmojiName, ParticipantEmojiID)
-
-	DayEmoji = "skull_crossbones"
 )
 
 type IntroValues struct {

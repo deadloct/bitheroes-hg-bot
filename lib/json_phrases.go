@@ -41,6 +41,9 @@ func (jp *JSONPhrases) GetRandomPhrase(user string, mention string, living []str
 	}
 
 	dyingName := fmt.Sprintf("**%v**", user)
+	if mention != "" {
+		dyingName = mention
+	}
 
 	var result bytes.Buffer
 	tmpl := jp.templates[jp.templateIndexes[i]]
@@ -59,11 +62,7 @@ func (jp *JSONPhrases) GetRandomPhrase(user string, mention string, living []str
 		jp.templateIndexes = append(jp.templateIndexes[:i], jp.templateIndexes[i+1:]...)
 	}
 
-	if mention == "" {
-		return result.String()
-	}
-
-	return fmt.Sprintf("%v (%v)", result.String(), mention)
+	return result.String()
 }
 
 func (jp *JSONPhrases) PhraseCount() int {

@@ -82,11 +82,13 @@ func NewGame(cfg GameConfig) *Game {
 
 func (g *Game) Start(ctx context.Context) error {
 	participantEmoji := settings.GetEmoji(settings.EmojiParticipant)
+	effieEmoji := settings.GetEmoji(settings.EmojiEffie)
 
 	// This is the welcome messsage that people react to to enter.
 	intro, err := g.getIntro(settings.IntroValues{
 		Delay:       g.Delay,
-		EmojiCode:   participantEmoji.EmojiCode(),
+		EntryEmoji:  participantEmoji.EmojiCode(),
+		EffieEmoji:  effieEmoji.EmojiCode(),
 		Sponsor:     g.Sponsor,
 		VictorCount: g.VictorCount,
 	})
@@ -244,10 +246,14 @@ func (g *Game) run(ctx context.Context) {
 	}
 
 	mentionStr := strings.Join(mentions, ", ")
+	snow := settings.GetEmoji(settings.EmojiPresSnow)
+	host := settings.GetEmoji(settings.EmojiCaesar)
 	g.sendBatchOutput([]string{
-		fmt.Sprintf("**This year's Hunger Games, sponsored by %v, have concluded!**", g.Sponsor),
+		fmt.Sprintf("%v  This year's Hunger Games have concluded. Congratulations to our new victor(s): %v!", host.EmojiCode(), mentionStr),
 		settings.WhiteSpaceChar,
-		fmt.Sprintf("%v: %v", "Congratulations to our new victor(s)", mentionStr),
+		fmt.Sprintf("%v  The tributes demonstrated exceptional survival skills and the winner(s) emerged victorious. Their combat prowess is a testament to the superiority of the Capitol's training and preparation methods.", snow.EmojiCode()),
+		settings.WhiteSpaceChar,
+		fmt.Sprintf("The victor(s) have won **%s**!", g.Sponsor),
 	})
 
 	g.Lock()
@@ -333,8 +339,10 @@ func (g *Game) runDay(ctx context.Context, day int, participants []*Participant)
 
 	g.logMessage(log.DebugLevel, "Dead players after day %v: %v", day+1, strings.Join(deadNames, ", "))
 
+	host := settings.GetEmoji(settings.EmojiCaesar)
 	output = append(output, settings.WhiteSpaceChar, fmt.Sprintf(
-		"%v player(s) remain at the end of day %v: %v",
+		"%v  %v player(s) remain at the end of day %v: %v",
+		host.EmojiCode(),
 		len(living),
 		day+1,
 		strings.Join(livingNames, ", "),
@@ -350,10 +358,11 @@ func (g *Game) runDay(ctx context.Context, day int, participants []*Participant)
 }
 
 func (g *Game) sendTributeOutput(participants []*Participant) {
+	hostEmoji := settings.GetEmoji(settings.EmojiCaesar)
 	g.logMessage(log.DebugLevel, "tribute count: %v", len(participants))
 
 	tributeLines := []string{
-		"**Please welcome our brave tributes!**",
+		fmt.Sprintf("%v  Please welcome our brave tributes!", hostEmoji.EmojiCode()),
 		settings.WhiteSpaceChar,
 		"What a fantastic group of individuals we have for this year's contest:",
 	}

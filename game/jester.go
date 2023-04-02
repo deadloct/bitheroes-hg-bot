@@ -50,7 +50,11 @@ func (j *Jester) StartRandomJokes(ctx context.Context, stop chan struct{}) {
 }
 
 func (j *Jester) sendJoke(msg *discordgo.Message) (*discordgo.Message, error) {
-	intro := "Greetings, esteemed guests and citizens of the Capitol! As the royal jester to our illustrious President Snow, I stand before you today to bring some much-needed levity and humor to this esteemed gathering. I understand that some of you may be feeling impatient, but fear not! I am here to entertain you with the finest collection of dad jokes this side of the Districts."
+	caesarEmoji := settings.GetEmoji(settings.EmojiCaesar)
+	intro := fmt.Sprintf("%v  %v",
+		caesarEmoji.EmojiCode(),
+		"Greetings, esteemed guests and citizens of the Capitol! I am Caesar Flickerman, the host of this year's Hunger Games! What a time to be alive! I stand before you today to bring some much-needed levity and humor to this esteemed gathering. I understand that some of you may be feeling impatient, but fear not! I am here to entertain you with the finest collection of fatherly quips this side of the Districts.",
+	)
 
 	joke, err := j.generator.GetJoke()
 	if err != nil {

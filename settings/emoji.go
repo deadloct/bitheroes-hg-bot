@@ -27,6 +27,8 @@ var (
 	EmojiParticipant EmojiKey = "Participant"
 	EmojiClone       EmojiKey = "Clone"
 	EmojiPresSnow    EmojiKey = "PresSnow"
+	EmojiEffie       EmojiKey = "Effie"
+	EmojiCaesar      EmojiKey = "Caesar"
 
 	emojis = map[EmojiKey]EmojiInfo{
 		EmojiParticipant: {
@@ -45,6 +47,18 @@ var (
 			Name:     GetenvStr("BITHEROES_HG_BOT_PRESIDENT_SNOW_EMOJI_NAME"),
 			ID:       GetenvStr("BITHEROES_HG_BOT_PRESIDENT_SNOW_EMOJI_ID"),
 			Animated: GetenvBool("BITHEROES_HG_BOT_PRESIDENT_SNOW_EMOJI_ANIMATED"),
+		},
+
+		EmojiEffie: {
+			Name:     GetenvStr("BITHEROES_HG_BOT_EFFIE_EMOJI_NAME"),
+			ID:       GetenvStr("BITHEROES_HG_BOT_EFFIE_EMOJI_ID"),
+			Animated: GetenvBool("BITHEROES_HG_BOT_EFFIE_EMOJI_ANIMATED"),
+		},
+
+		EmojiCaesar: {
+			Name:     GetenvStr("BITHEROES_HG_BOT_CAESAR_EMOJI_NAME"),
+			ID:       GetenvStr("BITHEROES_HG_BOT_CAESAR_EMOJI_ID"),
+			Animated: GetenvBool("BITHEROES_HG_BOT_CAESAR_EMOJI_ANIMATED"),
 		},
 	}
 

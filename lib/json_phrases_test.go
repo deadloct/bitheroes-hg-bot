@@ -84,8 +84,8 @@ func TestJSONPhrases_GetRandomPhrase_SingleReplace(t *testing.T) {
 	living := []string{"Player 1", "Player 2"}
 
 	actual := jp.GetRandomPhrase(dying.Username, dyingMention, living)
-	expected1 := fmt.Sprintf("**%v** killed by %v (%v)", dying.Username, living[0], dyingMention)
-	expected2 := fmt.Sprintf("**%v** killed by %v (%v)", dying.Username, living[1], dyingMention)
+	expected1 := fmt.Sprintf("%v killed by %v", dyingMention, living[0])
+	expected2 := fmt.Sprintf("%v killed by %v", dyingMention, living[1])
 	if actual != expected1 && actual != expected2 {
 		t.Errorf("expected '%v' to equal '%v' or '%v'", actual, expected1, expected2)
 	}
@@ -93,7 +93,6 @@ func TestJSONPhrases_GetRandomPhrase_SingleReplace(t *testing.T) {
 
 func TestGame_getRandomPhrase_MultiReplace(t *testing.T) {
 	phrase := "%s gave %s a poison flower, and %s said thanks while %s laughed"
-	expectedPhrase := "%s gave **%s** a poison flower, and **%s** said thanks while %s laughed (%s)"
 	data := []byte(fmt.Sprintf(`["%s"]`, fmt.Sprintf(phrase, "{{.Killer}}", "{{.Dying}}", "{{.Dying}}", "{{.Killer}}")))
 	jp := NewJSONPhrases(data)
 
@@ -102,8 +101,8 @@ func TestGame_getRandomPhrase_MultiReplace(t *testing.T) {
 	living := []string{"Player 1", "Player 2"}
 
 	actual := jp.GetRandomPhrase(dying.Username, dyingMention, living)
-	expected1 := fmt.Sprintf(expectedPhrase, living[0], dying.Username, dying.Username, living[0], dyingMention)
-	expected2 := fmt.Sprintf(expectedPhrase, living[1], dying.Username, dying.Username, living[1], dyingMention)
+	expected1 := fmt.Sprintf(phrase, living[0], dyingMention, dyingMention, living[0])
+	expected2 := fmt.Sprintf(phrase, living[1], dyingMention, dyingMention, living[1])
 	if actual != expected1 && actual != expected2 {
 		t.Errorf("expected '%v' to equal '%v' or '%v'", actual, expected1, expected2)
 	}

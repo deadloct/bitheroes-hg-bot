@@ -211,6 +211,7 @@ func (g *Game) run(ctx context.Context) {
 		}
 	}
 
+	var quietDays int
 	for day := 0; len(g.participants) > g.VictorCount; day++ {
 		time.Sleep(g.DayDelay)
 
@@ -225,7 +226,14 @@ func (g *Game) run(ctx context.Context) {
 		default:
 			g.logMessage(log.InfoLevel, "simulating day %v with %v tributes", day, len(g.participants))
 			var err error
-			g.participants, err = g.runDay(ctx, day, g.participants)
+
+			var mustKill bool
+			if quietDays >= settings.MaxQuietDays {
+				mustKill = true
+			}
+
+			pcount := len(g.participants)
+			g.participants, err = g.runDay(ctx, day, g.participants, mustKill)
 			if err != nil {
 				g.logMessage(log.ErrorLevel, "failed to simulate day %v: %v", day, err)
 				g.Sender.SendQuoted(fmt.Sprintf("failed to run game for day %v", day+1))
@@ -233,6 +241,12 @@ func (g *Game) run(ctx context.Context) {
 				g.state = Cancelled
 				g.Unlock()
 				return
+			}
+
+			if len(g.participants) == pcount {
+				quietDays++
+			} else {
+				quietDays = 0
 			}
 
 			g.logMessage(log.InfoLevel, "users left after day %v: %v", day, len(g.participants))
@@ -261,7 +275,7 @@ func (g *Game) run(ctx context.Context) {
 	g.Unlock()
 }
 
-func (g *Game) runDay(ctx context.Context, day int, participants []*Participant) ([]*Participant, error) {
+func (g *Game) runDay(ctx context.Context, day int, participants []*Participant, mustKill bool) ([]*Participant, error) {
 	if len(participants) == 1 {
 		return participants, nil
 	}
@@ -278,9 +292,14 @@ func (g *Game) runDay(ctx context.Context, day int, participants []*Participant)
 
 	// min and max are 0-based
 	var min int
+	if mustKill {
+		g.logMessage(log.InfoLevel, "forcing a kill due to too many quiet days")
+		min = 1
+	}
+
 	max := (len(participants) / 2) + 1 // +1 b/c right is exclusive
 
-	// 1/2 - 3/4 on the first day, it's always a slaughter
+	// 1/2 - 3/4 on the first day, it's always a slaughter!
 	if day == 0 && len(participants) > 5 {
 		min = max / 2
 		max = max * 3 / 4

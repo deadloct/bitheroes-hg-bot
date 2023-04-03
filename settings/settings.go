@@ -39,6 +39,8 @@ const (
 
 	DataLocation = "data"
 	DayEmoji     = "skull_crossbones"
+
+	MaxQuietDays = 3
 )
 
 var (

@@ -15,29 +15,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func benchmarkGameRun(b *testing.B, cfg GameConfig, members []*discordgo.Member) {
-	b.Helper()
-
-	sender := &BufferSender{SendLatency: 100 * time.Millisecond}
-
-	cfg.Sender = sender
-	g := NewGame(cfg)
-	g.introMessage = &discordgo.Message{ID: "123"}
-
-	emoji := settings.GetEmoji(settings.EmojiParticipant).Name
-	for i := 0; i < len(members); i++ {
-		g.RegisterUser("123", emoji, NewParticipant(members[i]))
-	}
-
-	g.run(context.Background())
-}
-
-func benchmarkSetup(b *testing.B, userCount, multiplier int) (PhraseGenerator, []*discordgo.Member) {
-	b.Helper()
+func testSetupGameRun(f Fataler, userCount, multiplier int) (PhraseGenerator, []*discordgo.Member) {
+	f.Helper()
 	log.SetLevel(log.WarnLevel)
 	data, err := os.ReadFile(path.Join("..", settings.DataLocation, settings.PhrasesFile))
 	if err != nil {
-		b.Fatal(err)
+		f.Fatal(err)
 	}
 
 	var members []*discordgo.Member
@@ -53,6 +36,99 @@ func benchmarkSetup(b *testing.B, userCount, multiplier int) (PhraseGenerator, [
 	}
 
 	return lib.NewJSONPhrases(data), members
+}
+
+func testRunGame(f Fataler, cfg GameConfig, members []*discordgo.Member) []*Participant {
+	f.Helper()
+
+	sender := &BufferSender{SendLatency: 100 * time.Millisecond}
+
+	cfg.Sender = sender
+	g := NewGame(cfg)
+	g.introMessage = &discordgo.Message{ID: "123"}
+
+	emoji := settings.GetEmoji(settings.EmojiParticipant).Name
+	for i := 0; i < len(members); i++ {
+		g.RegisterUser("123", emoji, NewParticipant(members[i]))
+	}
+
+	return g.run(context.Background())
+}
+
+func TestGame_Run(t *testing.T) {
+	sender := &BufferSender{SendLatency: 100 * time.Millisecond}
+
+	tests := map[string]struct {
+		UserCount int
+		Clone     int
+		Victors   int
+		RunCount  int
+	}{
+		"1 user, no clones, 1 victors": {
+			UserCount: 1,
+			Clone:     1,
+			Victors:   1,
+			RunCount:  5,
+		},
+		"100 users, no clones, 1 victor": {
+			UserCount: 100,
+			Clone:     1,
+			Victors:   1,
+			RunCount:  5,
+		},
+		"100 users, no clones, 10 victors": {
+			UserCount: 100,
+			Clone:     1,
+			Victors:   10,
+			RunCount:  5,
+		},
+		"100 users, 5 clones, 5 victors": {
+			UserCount: 100,
+			Clone:     5,
+			Victors:   5,
+			RunCount:  1,
+		},
+		"20 users, no clones, 19 victors": {
+			UserCount: 20,
+			Clone:     1,
+			Victors:   19,
+			RunCount:  10,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			for i := 0; i < test.RunCount; i++ {
+				jp, users := testSetupGameRun(t, test.UserCount, test.Clone)
+
+				cfg := GameConfig{
+					ChannelID:       "123",
+					DayDelay:        1 * time.Nanosecond,
+					PhraseGenerator: jp,
+					Session:         &discordgo.Session{},
+					Sponsor:         "Sponsor",
+					Clone:           test.Clone,
+					VictorCount:     test.Victors,
+				}
+
+				cfg.Sender = sender
+				g := NewGame(cfg)
+				g.introMessage = &discordgo.Message{ID: "123"}
+
+				victors := testRunGame(t, cfg, users)
+
+				if len(victors) != test.Victors {
+					t.Fatalf("expected %v victors but got %v", test.Victors, len(victors))
+				}
+			}
+		})
+	}
+
+}
+
+type Fataler interface {
+	Helper()
+	Fatal(args ...any)
 }
 
 func BenchmarkGameDuration(b *testing.B) {
@@ -84,10 +160,10 @@ func BenchmarkGameDuration(b *testing.B) {
 
 	for name, test := range tests {
 		b.Run(name, func(b *testing.B) {
-			jp, users := benchmarkSetup(b, test.UserCount, test.Clone)
+			jp, users := testSetupGameRun(b, test.UserCount, test.Clone)
 
 			for i := 0; i < b.N; i++ {
-				benchmarkGameRun(
+				testRunGame(
 					b,
 					GameConfig{
 						ChannelID:       "123",

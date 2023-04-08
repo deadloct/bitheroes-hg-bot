@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"math"
 	"strings"
 	"sync"
 	"time"
@@ -177,7 +178,7 @@ func (g *Game) delayedStart(ctx context.Context) {
 	}()
 }
 
-func (g *Game) run(ctx context.Context) {
+func (g *Game) run(ctx context.Context) []*Participant {
 	g.logMessage(log.InfoLevel, "starting game with user count %v", len(g.participants))
 	g.Lock()
 	g.state = Started
@@ -189,7 +190,7 @@ func (g *Game) run(ctx context.Context) {
 		g.Lock()
 		g.state = Cancelled
 		g.Unlock()
-		return
+		return nil
 	}
 
 	g.sendTributeOutput(g.participants)
@@ -221,7 +222,7 @@ func (g *Game) run(ctx context.Context) {
 			g.Lock()
 			g.state = Cancelled
 			g.Unlock()
-			return
+			return nil
 
 		default:
 			g.logMessage(log.InfoLevel, "simulating day %v with %v tributes", day, len(g.participants))
@@ -240,7 +241,7 @@ func (g *Game) run(ctx context.Context) {
 				g.Lock()
 				g.state = Cancelled
 				g.Unlock()
-				return
+				return nil
 			}
 
 			if len(g.participants) == pcount {
@@ -254,10 +255,13 @@ func (g *Game) run(ctx context.Context) {
 	}
 
 	var mentions []string
+	var winnerLogs []string
 	for _, p := range g.participants {
 		mentions = append(mentions, p.Mention())
-		g.logMessage(log.InfoLevel, "winner: %v %v#%v %v", p.DisplayName(), p.User.Username, p.User.Discriminator, p.User.ID)
+		winnerLogs = append(winnerLogs, fmt.Sprintf("%v (%v#%v)", p.DisplayName(), p.User.Username, p.User.Discriminator))
 	}
+
+	g.logMessage(log.InfoLevel, fmt.Sprintf("Winners for sponsor %v: %v", g.Sponsor, strings.Join(winnerLogs, ",")))
 
 	mentionStr := strings.Join(mentions, ", ")
 	snow := settings.GetEmoji(settings.EmojiPresSnow)
@@ -273,6 +277,8 @@ func (g *Game) run(ctx context.Context) {
 	g.Lock()
 	g.state = Finished
 	g.Unlock()
+
+	return g.participants
 }
 
 func (g *Game) runDay(ctx context.Context, day int, participants []*Participant, mustKill bool) ([]*Participant, error) {
@@ -297,12 +303,20 @@ func (g *Game) runDay(ctx context.Context, day int, participants []*Participant,
 		min = 1
 	}
 
-	max := (len(participants) / 2) + 1 // +1 b/c right is exclusive
+	max := int(math.Min(
+		float64(len(participants)/2),
+		float64(len(participants)-g.VictorCount),
+	))
+	max++ // +1 b/c right is exclusive
 
 	// 1/2 - 3/4 on the first day, it's always a slaughter!
 	if day == 0 && len(participants) > 5 {
 		min = max / 2
-		max = max * 3 / 4
+		max = int(math.Min(
+			float64(max*3/4),
+			float64(len(participants)-g.VictorCount),
+		))
+		max++ // +1 b/c right is exclusive
 	}
 
 	killCount, err := lib.GetRandomInt(min, max)

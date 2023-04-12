@@ -52,6 +52,7 @@ type IntroValues struct {
 	Delay       time.Duration
 	EntryEmoji  string
 	EffieEmoji  string
+	MinimumTier int
 	Sponsor     string
 	VictorCount int
 }

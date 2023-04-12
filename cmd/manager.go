@@ -16,15 +16,21 @@ const (
 	CommandPrefix                 = "hg-"
 	CommandHelp                   = CommandPrefix + "help"
 	CommandStart                  = CommandPrefix + "start"
-	CommandStartOptionStartDelay  = "start-delay"
 	CommandStartOptionClone       = "clone"
-	CommandStartOptionVictorCount = "victors"
+	CommandStartOptionNotify      = "notify"
+	CommandStartOptionMinimumTier = "minimum-tier"
 	CommandStartOptionSponsor     = "sponsor"
+	CommandStartOptionStartDelay  = "start-delay"
+	CommandStartOptionVictorCount = "victors"
 	CommandCancel                 = CommandPrefix + "cancel"
 	CommandClear                  = CommandPrefix + "clear"
 )
 
-var nonAlphanumericRegex = regexp.MustCompile(`[^\p{L}\p{N}-_\.\[\] ]+`)
+var (
+	nonAlphanumericRegex = regexp.MustCompile(`[^\p{L}\p{N}-_\.\[\] ]+`)
+
+	CommandStartOptionMinimumTierMinValue float64 = 2
+)
 
 var commands = []*discordgo.ApplicationCommand{
 	{
@@ -60,6 +66,19 @@ var commands = []*discordgo.ApplicationCommand{
 				Name:        CommandStartOptionSponsor,
 				Description: "The sponsor of the event. Default: user running this command",
 				Required:    false,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionUser,
+				Name:        CommandStartOptionNotify,
+				Description: "User to notify about result",
+				Required:    false,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionInteger,
+				Name:        CommandStartOptionMinimumTier,
+				Description: "Minimum tier of contestants",
+				Required:    false,
+				MinValue:    &CommandStartOptionMinimumTierMinValue,
 			},
 		},
 	},
@@ -169,6 +188,9 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 		session.ChannelMessageSend(ic.ChannelID, settings.Help)
 
 	case CommandStart:
+		var minimumTier int
+		var notify *discordgo.User
+
 		delay := settings.DefaultStartDelay * time.Second
 		clone := settings.DefaultClone
 		victors := settings.DefaultVictorCount
@@ -225,6 +247,18 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 				if v != "" {
 					sponsor = m.sanitize(v)
 				}
+
+			case CommandStartOptionNotify:
+				v := option.UserValue(session)
+				if v != nil {
+					notify = v
+				}
+
+			case CommandStartOptionMinimumTier:
+				v := int(option.IntValue())
+				if v > 1 {
+					minimumTier = v
+				}
 			}
 		}
 
@@ -245,6 +279,8 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 			Channel:         ic.ChannelID,
 			Delay:           delay,
 			Clone:           clone,
+			MinimumTier:     minimumTier,
+			Notify:          notify,
 			JokeGenerator:   jj,
 			PhraseGenerator: jp,
 			Sponsor:         sponsor,

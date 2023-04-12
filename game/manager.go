@@ -21,6 +21,8 @@ type GameStartConfig struct {
 	Delay           time.Duration
 	Clone           int
 	JokeGenerator   JokeGenerator
+	MinimumTier     int
+	Notify          *discordgo.User
 	PhraseGenerator PhraseGenerator
 	Sponsor         string
 	VictorCount     int
@@ -66,6 +68,8 @@ func (m *Manager) StartGame(cfg GameStartConfig) error {
 		Delay:           cfg.Delay,
 		Clone:           cfg.Clone,
 		JokeGenerator:   cfg.JokeGenerator,
+		MinimumTier:     cfg.MinimumTier,
+		Notify:          cfg.Notify,
 		PhraseGenerator: cfg.PhraseGenerator,
 		Sender:          sender,
 		Session:         m.session,

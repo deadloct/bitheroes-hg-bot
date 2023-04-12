@@ -4,7 +4,13 @@ _,.-'~'-.,__,.-'~'-.,_
 ** **
 {{.EffieEmoji}}  Citizens of Panem, beloved **{{.Sponsor}}** has sponsored a new Hunger Games event.
 ** **
-React to this message with {{.EntryEmoji}} within the next {{.Delay}} to participate. {{.VictorCount}} tribute(s) will be declared this year's victor(s).
+Rules for this contest:
+** **
+• React to this message with {{.EntryEmoji}} within the next {{.Delay}} to participate.
+• {{.VictorCount}} tribute(s) will be declared this year's victor(s).
+{{- if gt .MinimumTier 1}}
+• You must be Tier {{.MinimumTier}} or higher to enter.
+{{- end}}
 ** **
 May the odds be ever in your favor!
 ** **

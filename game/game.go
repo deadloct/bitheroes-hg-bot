@@ -39,6 +39,8 @@ type GameConfig struct {
 	Delay           time.Duration // delayed start
 	Clone           int
 	JokeGenerator   JokeGenerator
+	MinimumTier     int
+	Notify          *discordgo.User
 	PhraseGenerator PhraseGenerator
 	Sender          Sender
 	Session         *discordgo.Session
@@ -90,6 +92,7 @@ func (g *Game) Start(ctx context.Context) error {
 		Delay:       g.Delay,
 		EntryEmoji:  participantEmoji.EmojiCode(),
 		EffieEmoji:  effieEmoji.EmojiCode(),
+		MinimumTier: g.MinimumTier,
 		Sponsor:     g.Sponsor,
 		VictorCount: g.VictorCount,
 	})
@@ -266,13 +269,23 @@ func (g *Game) run(ctx context.Context) []*Participant {
 	mentionStr := strings.Join(mentions, ", ")
 	snow := settings.GetEmoji(settings.EmojiPresSnow)
 	host := settings.GetEmoji(settings.EmojiCaesar)
-	g.sendBatchOutput([]string{
+	lines := []string{
 		fmt.Sprintf("%v  This year's Hunger Games have concluded. Congratulations to our new victor(s): %v!", host.EmojiCode(), mentionStr),
 		settings.WhiteSpaceChar,
 		fmt.Sprintf("%v  The tributes demonstrated exceptional survival skills and the winner(s) emerged victorious. Their combat prowess is a testament to the superiority of the Capitol's training and preparation methods.", snow.EmojiCode()),
 		settings.WhiteSpaceChar,
 		fmt.Sprintf("The victor(s) have won **%s**!", g.Sponsor),
-	})
+	}
+
+	if g.Notify != nil {
+		lines = append(
+			lines,
+			settings.WhiteSpaceChar,
+			fmt.Sprintf("(fyi <@%v>)", g.Notify.ID),
+		)
+	}
+
+	g.sendBatchOutput(lines)
 
 	g.Lock()
 	g.state = Finished

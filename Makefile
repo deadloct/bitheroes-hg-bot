@@ -28,3 +28,11 @@ build_arm: clean
 deploy_arm: build_arm
 	rsync -avz $(LOCAL_PATH)/ $(SSH_HOST):$(SSH_DIR)
 	-ssh $(SSH_HOST) "killall $(NAME)"
+
+build_amd64: clean
+	GOOS=linux GOARCH=amd64 go build -o $(LOCAL_PATH)/$(NAME)
+	cp -R data $(LOCAL_PATH)
+
+deploy_amd64: build_amd64
+	rsync -avz $(LOCAL_PATH)/ $(SSH_HOST):$(SSH_DIR)
+	-ssh $(SSH_HOST) "killall $(NAME)"

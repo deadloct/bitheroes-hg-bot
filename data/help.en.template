@@ -7,7 +7,7 @@ Starts a new Hunger Games event. There can only be one active game per channel. 
 
 This command has the following optional parameters:
 
-• `start-delay`: The number of **seconds** to wait for reactions until starting the game. Default: 60, Minimum: 5, Maximum: 3600 (1 hour).
+• `start-delay`: The number of **seconds** to wait for reactions until starting the game. Default: 60, Minimum: 5, Maximum: 43200 (12 hours in seconds).
 
 • `victors`: The number of winners. Default: 1, Minimum: 1, Maximum: anything, although it will be the number of people who enter.
 

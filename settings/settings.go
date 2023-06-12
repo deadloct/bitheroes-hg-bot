@@ -13,7 +13,7 @@ const (
 	// Seconds
 	DefaultStartDelay = 60
 	MinimumStartDelay = 5
-	MaximumStartDelay = 60 * 60 // 60 minutes in seconds
+	MaximumStartDelay = 12 * 60 * 60 // 12 hours
 
 	EnableClone  = true
 	DefaultClone = 1

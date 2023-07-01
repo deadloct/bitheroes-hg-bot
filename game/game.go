@@ -45,6 +45,7 @@ type GameConfig struct {
 	Sender          Sender
 	Session         *discordgo.Session
 	Sponsor         string
+	StartedBy       *Participant
 	VictorCount     int
 }
 
@@ -123,7 +124,8 @@ func (g *Game) IsRunning() bool {
 	g.Lock()
 	defer g.Unlock()
 
-	return g.state == Started
+	// Not Started is a waiting game, so it counts as "running"
+	return g.state == Started || g.state == NotStarted
 }
 
 func (g *Game) RegisterUser(messageID, emoji string, participant *Participant) {
@@ -261,7 +263,7 @@ func (g *Game) run(ctx context.Context) []*Participant {
 	var winnerLogs []string
 	for _, p := range g.participants {
 		mentions = append(mentions, p.Mention())
-		winnerLogs = append(winnerLogs, fmt.Sprintf("%v (%v#%v)", p.DisplayName(), p.User.Username, p.User.Discriminator))
+		winnerLogs = append(winnerLogs, p.DisplayFullName())
 	}
 
 	g.logMessage(log.InfoLevel, fmt.Sprintf("Winners for sponsor %v: %v", g.Sponsor, strings.Join(winnerLogs, ",")))

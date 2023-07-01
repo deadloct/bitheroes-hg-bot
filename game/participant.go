@@ -25,3 +25,11 @@ func (p *Participant) DisplayName() string {
 func (p *Participant) Mention() string {
 	return fmt.Sprintf("<@%v>", p.User.ID)
 }
+
+func (p *Participant) DisplayFullName() string {
+	if p.User == nil {
+		return p.DisplayName()
+	}
+
+	return fmt.Sprintf("%v (%v#%v)", p.DisplayName(), p.User.Username, p.User.Discriminator)
+}

@@ -182,6 +182,9 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 
 	options := ic.ApplicationCommandData().Options
 
+	startedBy := game.NewParticipant(ic.Member)
+	log.Infof("%v issued command %v", startedBy.DisplayFullName(), ic.ApplicationCommandData().Name)
+
 	v := ic.ApplicationCommandData().Name
 	switch v {
 	case CommandHelp:
@@ -194,7 +197,7 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 		delay := settings.DefaultStartDelay * time.Second
 		clone := settings.DefaultClone
 		victors := settings.DefaultVictorCount
-		sponsor := game.NewParticipant(ic.Member).DisplayName()
+		sponsor := startedBy.DisplayName()
 
 		for _, option := range options {
 			switch option.Name {
@@ -284,6 +287,7 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 			JokeGenerator:   jj,
 			PhraseGenerator: jp,
 			Sponsor:         sponsor,
+			StartedBy:       startedBy,
 			VictorCount:     victors,
 		}
 

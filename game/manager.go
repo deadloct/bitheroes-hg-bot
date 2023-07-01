@@ -25,6 +25,7 @@ type GameStartConfig struct {
 	Notify          *discordgo.User
 	PhraseGenerator PhraseGenerator
 	Sponsor         string
+	StartedBy       *Participant
 	VictorCount     int
 }
 
@@ -59,10 +60,10 @@ func (m *Manager) StartGame(cfg GameStartConfig) error {
 		return fmt.Errorf("game already exists in channel %s", cfg.Channel)
 	}
 
-	sender.SendQuoted("Starting a Hunger Games event in this channel. Any existing, unstarted games will be cancelled.")
+	sender.SendQuoted("Starting a Hunger Games event in this channel.")
 	m.EndGame(cfg.Channel)
 
-	log.Infof("starting game in channel %v", cfg.Channel)
+	log.Infof("%v started a game in channel %v: %#v", cfg.StartedBy.DisplayFullName(), cfg.Channel, cfg)
 
 	g := NewGame(GameConfig{
 		Delay:           cfg.Delay,
@@ -74,6 +75,7 @@ func (m *Manager) StartGame(cfg GameStartConfig) error {
 		Sender:          sender,
 		Session:         m.session,
 		Sponsor:         cfg.Sponsor,
+		StartedBy:       cfg.StartedBy,
 		VictorCount:     cfg.VictorCount,
 	})
 

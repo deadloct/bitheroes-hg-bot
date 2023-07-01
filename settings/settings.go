@@ -11,14 +11,14 @@ import (
 
 const (
 	// Seconds
-	DefaultStartDelay = 60
+	DefaultStartDelay = 15 * 60 // 10 minutes
 	MinimumStartDelay = 5
 	MaximumStartDelay = 12 * 60 * 60 // 12 hours
 
 	EnableClone  = true
 	DefaultClone = 1
 	MinimumClone = 1
-	MaximumClone = 100
+	MaximumClone = 10
 
 	DefaultDayDelay    = 5 * time.Second
 	DefaultVictorCount = 1

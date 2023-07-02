@@ -8,6 +8,8 @@ import (
 
 type Participant struct {
 	*discordgo.Member
+
+	AlternateDisplayName string
 }
 
 func NewParticipant(m *discordgo.Member) *Participant {
@@ -15,6 +17,10 @@ func NewParticipant(m *discordgo.Member) *Participant {
 }
 
 func (p *Participant) DisplayName() string {
+	if p.AlternateDisplayName != "" {
+		return p.AlternateDisplayName
+	}
+
 	if p.Nick != "" {
 		return p.Nick
 	}
@@ -27,9 +33,11 @@ func (p *Participant) Mention() string {
 }
 
 func (p *Participant) DisplayFullName() string {
-	if p.User == nil {
-		return p.DisplayName()
+	displayName := p.User.Username
+
+	if p.Nick != "" {
+		displayName = p.Nick
 	}
 
-	return fmt.Sprintf("%v (%v#%v)", p.DisplayName(), p.User.Username, p.User.Discriminator)
+	return fmt.Sprintf("%v (%v#%v)", displayName, p.User.Username, p.User.Discriminator)
 }

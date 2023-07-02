@@ -34,7 +34,8 @@ type JokeGenerator interface {
 }
 
 type GameConfig struct {
-	ChannelID       string
+	Channel         *discordgo.Channel
+	Guild           *discordgo.Guild
 	DayDelay        time.Duration
 	Delay           time.Duration // delayed start
 	Clone           int
@@ -52,9 +53,7 @@ type GameConfig struct {
 type Game struct {
 	GameConfig
 
-	channelName    string
 	introMessage   *discordgo.Message
-	serverName     string
 	state          GameState
 	participants   []*Participant
 	participantMap map[string]*Participant
@@ -67,20 +66,9 @@ func NewGame(cfg GameConfig) *Game {
 		cfg.DayDelay = settings.DefaultDayDelay
 	}
 
-	channelName := cfg.ChannelID
-	serverName := "unknown"
-	if channel, err := cfg.Session.State.Channel(cfg.ChannelID); err == nil {
-		channelName = channel.Name
-		if server, err := cfg.Session.State.Guild(channel.GuildID); err != nil {
-			serverName = server.Name
-		}
-	}
-
 	return &Game{
 		GameConfig:     cfg,
 		participantMap: make(map[string]*Participant),
-		channelName:    channelName,
-		serverName:     serverName,
 	}
 }
 
@@ -204,15 +192,9 @@ func (g *Game) run(ctx context.Context) []*Participant {
 	if g.Clone > 1 {
 		for _, p := range g.participants {
 			for i := 2; i <= g.Clone; i++ {
-				name := fmt.Sprintf("%v-%v", p.DisplayName(), i)
-				g.participants = append(g.participants, NewParticipant(&discordgo.Member{
-					Nick: name,
-					User: &discordgo.User{
-						Username:      name,
-						ID:            p.User.ID,
-						Discriminator: p.User.Discriminator,
-					},
-				}))
+				pclone := NewParticipant(p.Member)
+				pclone.AlternateDisplayName = fmt.Sprintf("%v-%v", p.DisplayName(), i)
+				g.participants = append(g.participants, pclone)
 			}
 		}
 	}
@@ -292,6 +274,8 @@ func (g *Game) run(ctx context.Context) []*Participant {
 	g.Lock()
 	g.state = Finished
 	g.Unlock()
+
+	g.sendFinalNotifications(g.StartedBy, g.participants)
 
 	return g.participants
 }
@@ -437,8 +421,45 @@ func (g *Game) sendBatchOutput(lines []string) {
 	g.Sender.SendQuoted(strings.Join(lines, "\n"))
 }
 
+func (g *Game) sendFinalNotifications(startedBy *Participant, winners []*Participant) {
+	if startedBy.User != nil {
+		var msg string
+		if len(winners) == 0 {
+			msg = "Your Hunger Games event has finished but sadly there were no participants."
+		} else {
+			var users []string
+			for _, u := range winners {
+				users = append(users, fmt.Sprintf("* %s", u.DisplayFullName()))
+			}
+
+			msg = fmt.Sprintf(
+				"Your Hunger Games event has finished! Please contact the following winners:\n%s",
+				strings.Join(users, "\n"),
+			)
+		}
+
+		if err := g.Sender.SendDM(startedBy.User, msg); err != nil {
+			g.logMessage(log.ErrorLevel, "unable to create DM with startedBy %s for winner notification: %v", startedBy.DisplayFullName(), err)
+			return
+		}
+	}
+
+	for _, winner := range winners {
+		if winner.User != nil {
+			msg := fmt.Sprintf(
+				"Congratulations, you won the Hunger Games event hosted by %s! Please get in touch with them if you haven't already.",
+				startedBy.DisplayFullName(),
+			)
+
+			if err := g.Sender.SendDM(winner.User, msg); err != nil {
+				g.logMessage(log.ErrorLevel, "unable to create DM to participant %s for winner notification: %v", winner.DisplayFullName(), err)
+			}
+		}
+	}
+}
+
 func (g *Game) logMessage(level log.Level, msg string, args ...interface{}) {
-	// msg = fmt.Sprintf("%v (server:'%s' channel:'%s')", msg, g.serverName, g.channelName)
+	msg = fmt.Sprintf("%v (server:'%s' channel:'%s')", msg, g.Guild.Name, g.Channel.Name)
 	switch level {
 	case log.TraceLevel:
 		log.Tracef(msg, args...)

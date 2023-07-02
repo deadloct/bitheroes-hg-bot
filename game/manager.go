@@ -17,7 +17,8 @@ type RunningGame struct {
 }
 
 type GameStartConfig struct {
-	Channel         string
+	Channel         *discordgo.Channel
+	Guild           *discordgo.Guild
 	Delay           time.Duration
 	Clone           int
 	JokeGenerator   JokeGenerator
@@ -52,21 +53,23 @@ func ManagerInstance(session *discordgo.Session) *Manager {
 }
 
 func (m *Manager) StartGame(cfg GameStartConfig) error {
-	sender := NewDiscordSender(m.session, cfg.Channel)
+	sender := NewDiscordSender(m.session, cfg.Channel.ID)
 
-	if !m.CanStart(cfg.Channel) {
-		log.Errorf("game already running in channel %v", cfg.Channel)
+	if !m.CanStart(cfg.Channel.ID) {
+		log.Errorf("game already running in channel %v", cfg.Channel.Name)
 		sender.SendQuoted("There is already an active Hunger Games running in this channel, please wait for it to finish or stop the existing game first.")
-		return fmt.Errorf("game already exists in channel %s", cfg.Channel)
+		return fmt.Errorf("game already exists in channel %s", cfg.Channel.Name)
 	}
 
 	sender.SendQuoted("Starting a Hunger Games event in this channel.")
-	m.EndGame(cfg.Channel)
+	m.EndGame(cfg.Channel.ID)
 
-	log.Infof("%v started a game in channel %v: %#v", cfg.StartedBy.DisplayFullName(), cfg.Channel, cfg)
+	log.Infof("%v started a game channel:%v server:%v config:%#v", cfg.StartedBy.DisplayFullName(), cfg.Channel.Name, cfg.Guild.Name, cfg)
 
 	g := NewGame(GameConfig{
 		Delay:           cfg.Delay,
+		Guild:           cfg.Guild,
+		Channel:         cfg.Channel,
 		Clone:           cfg.Clone,
 		JokeGenerator:   cfg.JokeGenerator,
 		MinimumTier:     cfg.MinimumTier,
@@ -90,7 +93,7 @@ func (m *Manager) StartGame(cfg GameStartConfig) error {
 	}
 
 	m.Lock()
-	m.games[cfg.Channel] = &RunningGame{
+	m.games[cfg.Channel.ID] = &RunningGame{
 		Game:   g,
 		Cancel: cancel,
 	}

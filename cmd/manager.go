@@ -185,6 +185,16 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 	startedBy := game.NewParticipant(ic.Member)
 	log.Infof("%v issued command %v", startedBy.DisplayFullName(), ic.ApplicationCommandData().Name)
 
+	guild, err := session.Guild(ic.GuildID)
+	if err != nil {
+		log.Errorf("could not retrieve guild info for guild %v: %v", ic.GuildID, err)
+	}
+
+	channel, err := session.Channel(ic.ChannelID)
+	if err != nil {
+		log.Errorf("could not retrieve channel info for channel %v: %v", ic.ChannelID, err)
+	}
+
 	v := ic.ApplicationCommandData().Name
 	switch v {
 	case CommandHelp:
@@ -279,7 +289,8 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 		}
 
 		cfg := game.GameStartConfig{
-			Channel:         ic.ChannelID,
+			Guild:           guild,
+			Channel:         channel,
 			Delay:           delay,
 			Clone:           clone,
 			MinimumTier:     minimumTier,

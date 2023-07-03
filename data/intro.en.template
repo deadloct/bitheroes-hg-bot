@@ -7,7 +7,11 @@ _,.-'~'-.,__,.-'~'-.,_
 Rules for this contest:
 ** **
 • React to this message with {{.EntryEmoji}} within the next {{.Delay}} to participate.
-• {{.VictorCount}} tribute(s) will be declared this year's victor(s).
+{{- if gt .VictorCount 1}}
+• {{.VictorCount}} tributes will be declared this year's victors.
+{{- else}}
+• {{.VictorCount}} tribute will be declared this year's victor.
+{{end}}
 {{- if gt .MinimumTier 1}}
 • You must be Tier {{.MinimumTier}} or higher to enter.
 {{- end}}

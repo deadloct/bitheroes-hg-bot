@@ -102,13 +102,20 @@ func TestGame_Run(t *testing.T) {
 				jp, users := testSetupGameRun(t, test.UserCount, test.Clone)
 
 				cfg := GameConfig{
-					ChannelID:       "123",
+					Channel:         &discordgo.Channel{ID: "123", Name: "123"},
+					Guild:           &discordgo.Guild{ID: "123", Name: "123"},
 					DayDelay:        1 * time.Nanosecond,
 					PhraseGenerator: jp,
 					Session:         &discordgo.Session{},
 					Sponsor:         "Sponsor",
 					Clone:           test.Clone,
-					VictorCount:     test.Victors,
+					StartedBy: NewParticipant(&discordgo.Member{
+						User: &discordgo.User{
+							ID:       "123",
+							Username: "Hello",
+						},
+					}),
+					VictorCount: test.Victors,
 				}
 
 				cfg.Sender = sender
@@ -166,13 +173,20 @@ func BenchmarkGameDuration(b *testing.B) {
 				testRunGame(
 					b,
 					GameConfig{
-						ChannelID:       "123",
+						Channel:         &discordgo.Channel{ID: "123", Name: "123"},
+						Guild:           &discordgo.Guild{ID: "123", Name: "123"},
 						DayDelay:        1 * time.Nanosecond,
 						PhraseGenerator: jp,
 						Session:         &discordgo.Session{},
 						Sponsor:         "Sponsor",
 						Clone:           test.Clone,
-						VictorCount:     1,
+						StartedBy: NewParticipant(&discordgo.Member{
+							User: &discordgo.User{
+								ID:       "123",
+								Username: "Hello",
+							},
+						}),
+						VictorCount: 1,
 					},
 					users,
 				)
@@ -193,6 +207,10 @@ func (b *BufferSender) SendQuoted(str string) (*discordgo.Message, error) {
 
 func (b *BufferSender) SendEmbed(str string) (*discordgo.Message, error) {
 	return b.send(str)
+}
+
+func (b *BufferSender) SendDM(user *discordgo.User, msg string) error {
+	return nil
 }
 
 func (b *BufferSender) send(str string) (*discordgo.Message, error) {

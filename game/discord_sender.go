@@ -13,6 +13,7 @@ import (
 type Sender interface {
 	SendQuoted(str string) (*discordgo.Message, error)
 	SendEmbed(str string) (*discordgo.Message, error)
+	SendDM(user *discordgo.User, msg string) error
 }
 
 type SendingFunc func(str string) (*discordgo.Message, error)
@@ -35,6 +36,19 @@ func (s *DiscordSender) SendQuoted(str string) (*discordgo.Message, error) {
 
 func (s *DiscordSender) SendEmbed(str string) (*discordgo.Message, error) {
 	return s.send(str, s.flushEmbed)
+}
+
+func (s *DiscordSender) SendDM(user *discordgo.User, msg string) error {
+	dmChannel, err := s.session.UserChannelCreate(user.ID)
+	if err != nil {
+		return err
+	}
+
+	if _, err = s.session.ChannelMessageSend(dmChannel.ID, msg); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *DiscordSender) send(str string, sender SendingFunc) (*discordgo.Message, error) {

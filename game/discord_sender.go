@@ -11,6 +11,7 @@ import (
 )
 
 type Sender interface {
+	Send(str string) (*discordgo.Message, error)
 	SendQuoted(str string) (*discordgo.Message, error)
 	SendEmbed(str string) (*discordgo.Message, error)
 	SendDM(user *discordgo.User, msg string) error
@@ -28,6 +29,10 @@ func NewDiscordSender(session *discordgo.Session, channelID string) *DiscordSend
 		channelID: channelID,
 		session:   session,
 	}
+}
+
+func (s *DiscordSender) Send(str string) (*discordgo.Message, error) {
+	return s.send(str, s.flush)
 }
 
 func (s *DiscordSender) SendQuoted(str string) (*discordgo.Message, error) {
@@ -136,13 +141,16 @@ func (s *DiscordSender) sendLine(str string, sender SendingFunc) (*discordgo.Mes
 }
 
 func (s *DiscordSender) flushQuoted(str string) (*discordgo.Message, error) {
-	quoted := s.addBQ(str)
-	log.Tracef("sending message of length %v", len(quoted))
-	msg, err := s.session.ChannelMessageSend(s.channelID, quoted)
+	return s.flush(s.addBQ(str))
+}
+
+func (s *DiscordSender) flush(str string) (*discordgo.Message, error) {
+	log.Tracef("sending message of length %v", len(str))
+	msg, err := s.session.ChannelMessageSend(s.channelID, str)
 	if err != nil {
-		log.Errorf("error sending message of length %v: %v", len(quoted), err)
+		log.Errorf("error sending message of length %v: %v", len(str), err)
 	} else {
-		log.Tracef("successfully sent message of length %v", len(quoted))
+		log.Tracef("successfully sent message of length %v", len(str))
 	}
 
 	err = errors.Join(err, s.sendBlankLine())

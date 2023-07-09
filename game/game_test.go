@@ -201,6 +201,10 @@ type BufferSender struct {
 	sync.Mutex
 }
 
+func (b *BufferSender) Send(str string) (*discordgo.Message, error) {
+	return b.send(str)
+}
+
 func (b *BufferSender) SendQuoted(str string) (*discordgo.Message, error) {
 	return b.send(str)
 }

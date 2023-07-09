@@ -25,6 +25,13 @@ const (
 	Cancelled
 )
 
+// Temporary until persistance with DB and user settings panel.
+var NewGameSubscriptions = map[string]string{
+	"1058940133929394176": "1127437645627273236", // Test Server
+	"1066742525357989899": "1127443645231005796", // Bot Support Server
+	"608309926569181217":  "1124455074962354216", // The Bitverse
+}
+
 type PhraseGenerator interface {
 	GetRandomPhrase(user, mention string, alive []string) string
 }
@@ -92,6 +99,11 @@ func (g *Game) Start(ctx context.Context) error {
 	g.logMessage(log.DebugLevel, "sending intro")
 	if g.introMessage, err = g.Sender.SendEmbed(intro); err != nil {
 		return err
+	}
+
+	if role, ok := NewGameSubscriptions[g.Guild.ID]; ok {
+		g.logMessage(log.InfoLevel, "sending game notification for role %v in guild %v (%v)", role, g.Guild.Name, g.Guild.ID)
+		g.Sender.SendQuoted(fmt.Sprintf("<@&%s>", role))
 	}
 
 	g.Session.MessageReactionAdd(g.introMessage.ChannelID, g.introMessage.ID,

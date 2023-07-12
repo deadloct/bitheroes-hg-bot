@@ -103,7 +103,7 @@ func (g *Game) Start(ctx context.Context) error {
 
 	if role, ok := NewGameSubscriptions[g.Guild.ID]; ok {
 		g.logMessage(log.InfoLevel, "sending game notification for role %v in guild %v (%v)", role, g.Guild.Name, g.Guild.ID)
-		g.Sender.SendQuoted(fmt.Sprintf("<@&%s>", role))
+		g.Sender.Send(fmt.Sprintf("<@&%s>", role))
 	}
 
 	g.Session.MessageReactionAdd(g.introMessage.ChannelID, g.introMessage.ID,

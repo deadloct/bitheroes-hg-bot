@@ -129,26 +129,36 @@ func (g *Game) IsRunning() bool {
 }
 
 func (g *Game) RegisterUser(messageID, emoji string, participant *Participant) {
+	g.logMessage(log.InfoLevel, "Registering user %v", participant.DisplayFullName())
+
 	if g.HasStarted() {
+		g.logMessage(log.InfoLevel, "Game already started, cannot register user %v", participant.DisplayFullName())
 		return
 	}
 
 	participantEmoji := settings.GetEmoji(settings.EmojiParticipant)
 	if emoji != participantEmoji.Name {
+		g.logMessage(log.InfoLevel, "User %v reacted with a different emoji, not registering", participant.DisplayFullName())
 		return
 	}
 
 	if messageID != g.introMessage.ID {
+		g.logMessage(log.InfoLevel, "User %v reacted to a different message, not registering", participant.DisplayFullName())
 		return
 	}
 
 	if participant.User.Bot {
+		g.logMessage(log.InfoLevel, "User %v is bot, not registering", participant.DisplayFullName())
 		return
 	}
 
 	if _, ok := g.participantMap[participant.User.ID]; !ok {
 		g.participantMap[participant.User.ID] = participant
 		g.participants = append(g.participants, participant)
+		g.logMessage(log.InfoLevel, "Registered user %v", participant.DisplayFullName())
+
+	} else {
+		g.logMessage(log.InfoLevel, "User %v already registered, not registering", participant.DisplayFullName())
 	}
 }
 

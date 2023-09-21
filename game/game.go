@@ -172,9 +172,9 @@ func (g *Game) getIntro(vals settings.IntroValues) (string, error) {
 }
 
 func (g *Game) delayedStart(ctx context.Context) {
-	g.logMessage(log.DebugLevel, "delaying start by %v", g.Delay)
+	g.logMessage(log.InfoLevel, "delaying start by %v", g.Delay)
 
-	jokeCh := make(chan struct{})
+	jokeCh := make(chan struct{}, 1)
 	NewJester(g.JokeGenerator, g.Sender, g.Session).StartRandomJokes(ctx, jokeCh)
 
 	go func() {
@@ -187,7 +187,9 @@ func (g *Game) delayedStart(ctx context.Context) {
 			g.Unlock()
 
 		case <-time.After(g.Delay):
+			g.logMessage(log.InfoLevel, "delay timer ended, sending msg to joke ch to end the jester")
 			jokeCh <- struct{}{}
+			g.logMessage(log.InfoLevel, "starting game...")
 			g.run(ctx)
 		}
 	}()

@@ -10,6 +10,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const MaxJokeFailures = 5
+
 type Jester struct {
 	generator JokeGenerator
 	sender    Sender
@@ -28,12 +30,15 @@ func (j *Jester) StartRandomJokes(ctx context.Context, stop chan struct{}) {
 
 	go func() {
 		ticker := time.NewTicker(settings.JokeInterval)
+		defer ticker.Stop()
+
 		time.Sleep(2 * time.Second)
 		msg, err := j.sendJoke(nil)
 		if err != nil {
 			return
 		}
 
+		var failures int
 		for {
 			select {
 			case <-ctx.Done():
@@ -42,7 +47,15 @@ func (j *Jester) StartRandomJokes(ctx context.Context, stop chan struct{}) {
 				return
 			case <-ticker.C:
 				if msg, err = j.sendJoke(msg); err != nil {
-					return
+					if failures == MaxJokeFailures {
+						log.Errorf("failed to send joke %v times, ending the Jester", MaxJokeFailures)
+						return
+					}
+
+					log.Warn("failed to send joke, waiting for next ticker")
+					failures++
+				} else {
+					failures = 0
 				}
 			}
 		}

@@ -82,12 +82,15 @@ func NewGame(cfg GameConfig) *Game {
 func (g *Game) Start(ctx context.Context) error {
 	participantEmoji := settings.GetEmoji(settings.EmojiParticipant)
 	effieEmoji := settings.GetEmoji(settings.EmojiEffie)
+	cloneEmoji := settings.GetEmoji(settings.EmojiClone)
 
 	// This is the welcome messsage that people react to to enter.
 	intro, err := g.getIntro(settings.IntroValues{
 		Delay:       g.Delay,
 		EntryEmoji:  participantEmoji.EmojiCode(),
 		EffieEmoji:  effieEmoji.EmojiCode(),
+		CloneEmoji:  cloneEmoji.EmojiCode(),
+		Clone:       g.Clone,
 		MinimumTier: g.MinimumTier,
 		Sponsor:     g.Sponsor,
 		VictorCount: g.VictorCount,

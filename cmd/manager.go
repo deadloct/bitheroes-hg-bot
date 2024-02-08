@@ -20,7 +20,7 @@ const (
 	CommandStartOptionNotify      = "notify"
 	CommandStartOptionMinimumTier = "minimum-tier"
 	CommandStartOptionSponsor     = "sponsor"
-	CommandStartOptionStartDelay  = "start-delay"
+	CommandStartOptionStartDelay  = "start-delay-minutes"
 	CommandStartOptionVictorCount = "victors"
 	CommandCancel                 = CommandPrefix + "cancel"
 	CommandClear                  = CommandPrefix + "clear"
@@ -42,14 +42,14 @@ var commands = []*discordgo.ApplicationCommand{
 		Description: "Starts a Hunger Games event",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
-				Type: discordgo.ApplicationCommandOptionInteger,
+				Type: discordgo.ApplicationCommandOptionNumber,
 				Name: CommandStartOptionStartDelay,
 				Description: fmt.Sprintf(
-					"Seconds to wait for reactions before starting game. Default: %v, Min: %v, Max: %v (%v)",
+					"Minutes to wait for reactions before starting game. Default: %v, Min: %v, Max: %v (%v)",
 					settings.DefaultStartDelay,
 					settings.MinimumStartDelay,
 					settings.MaximumStartDelay,
-					time.Duration(settings.MaximumStartDelay)*time.Second,
+					time.Duration(settings.MaximumStartDelay)*time.Minute,
 				),
 				Required: false,
 			},
@@ -204,7 +204,7 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 		var minimumTier int
 		var notify *discordgo.User
 
-		delay := settings.DefaultStartDelay * time.Second
+		delay := settings.DefaultStartDelay * time.Minute
 		clone := settings.DefaultClone
 		victors := settings.DefaultVictorCount
 		sponsor := startedBy.DisplayName()
@@ -212,18 +212,18 @@ func (m *Manager) CommandHandler(session *discordgo.Session, ic *discordgo.Inter
 		for _, option := range options {
 			switch option.Name {
 			case CommandStartOptionStartDelay:
-				v := int(option.IntValue())
+				v := option.FloatValue()
 				switch {
 				case v < settings.MinimumStartDelay:
-					msg := fmt.Sprintf("> The delay of %v is much too short. Hunger Games will wait for %v seconds instead.", v, settings.DefaultStartDelay)
+					msg := fmt.Sprintf("> The delay of %v is way too short. Hunger Games will wait for %v instead.", v, delay)
 					session.ChannelMessageSend(ic.ChannelID, msg)
 					log.Warn(msg)
 				case v > settings.MaximumStartDelay:
-					msg := fmt.Sprintf("> The delay of %v is much too long. Hunger Games will wait for %v seconds instead.", v, settings.DefaultStartDelay)
+					msg := fmt.Sprintf("> The delay of %v is way too long. Hunger Games will wait for %v instead.", v, delay)
 					session.ChannelMessageSend(ic.ChannelID, msg)
 					log.Warn(msg)
 				default:
-					delay = time.Duration(v) * time.Second
+					delay = time.Duration(v * float64(time.Minute))
 				}
 
 			case CommandStartOptionClone:

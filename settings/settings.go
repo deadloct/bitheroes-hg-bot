@@ -11,14 +11,14 @@ import (
 
 const (
 	// Seconds
-	DefaultStartDelay = 15 * 60 // 10 minutes
-	MinimumStartDelay = 5
-	MaximumStartDelay = 12 * 60 * 60 // 12 hours
+	DefaultStartDelay = 10.0       // 10 minutes
+	MinimumStartDelay = 0.5        // 30 seconds
+	MaximumStartDelay = 4.0 * 60.0 // 4 hours
 
 	EnableClone  = true
 	DefaultClone = 1
 	MinimumClone = 1
-	MaximumClone = 10
+	MaximumClone = 20
 
 	DefaultDayDelay    = 5 * time.Second
 	DefaultVictorCount = 1
@@ -52,6 +52,8 @@ type IntroValues struct {
 	Delay       time.Duration
 	EntryEmoji  string
 	EffieEmoji  string
+	CloneEmoji  string
+	Clone       int
 	MinimumTier int
 	Sponsor     string
 	VictorCount int

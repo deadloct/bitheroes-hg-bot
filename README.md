@@ -10,19 +10,17 @@ After `start-delay` seconds, the game commences with players being eliminated re
 
 This bot is written in go. See [go.dev](https://go.dev/) for installation instructions.
 
-After cloning this repository, create a file in the root directory called `.env` and copy these lines into it:
+After cloning this repository, either add the auth token to `.env.development.local` or make an environment variable for it:
 
 ```bash
 export BITHEROES_HG_BOT_AUTH_TOKEN=
-export BITHEROES_HG_BOT_EMOJI_NAME=
-export BITHEROES_HG_BOT_EMOJI_ID=
 ```
 
 You'll need to create an application, and then a bot under that application, on the Discord developer site. Enter the new bot's authorization token after the `BITHEROES_HG_BOT_AUTH_TOKEN=` line above.
 
-Next you'll need to set the emoji name and ID equal to the reaction emoji that you'd like to use for the bot. 
+To customize the emojis, check out the `.env` file and copy those settings to `.env.development.local` or set environment variables for them:
 
-* The emoji name is easy to find, just hover above the emoji after it's been sent to a channel and use the part between the colons. For example for `:hungergames:` use `hungergames`.
+* The emoji names are easy to find, just hover above the emoji after it's been sent to a channel and use the part between the colons. For example for `:hungergames:` use `hungergames`.
 * To find the ID, right click on the emoji in a channel and select Copy Link. Use the webp file name without the extension as the ID. For example for the URL `https://cdn.discordapp.com/emojis/1084494508248543383.webp?size=96&quality=lossless` use `1084494508248543383`.
 
 Afterward start the bot by running:

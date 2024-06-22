@@ -1,14 +1,28 @@
 package settings
 
 import (
+	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/joho/godotenv"
 )
 
-var AuthToken = GetenvStr("BITHEROES_HG_BOT_AUTH_TOKEN")
+const Prefix = "BITHEROES_HG_BOT"
+
+func LoadEnvFiles() {
+	env := os.Getenv(EnvKey("HG_BOT_ENV"))
+	if env == "" {
+		env = "development"
+	}
+
+	godotenv.Load(".env." + env + ".local")
+	godotenv.Load(".env." + env)
+	godotenv.Load()
+}
 
 func GetenvStr(key string) string {
-	return os.Getenv(key)
+	return os.Getenv(EnvKey(key))
 }
 
 func GetenvInt(key string) int {
@@ -37,4 +51,8 @@ func GetenvBool(key string) bool {
 	}
 
 	return v
+}
+
+func EnvKey(str string) string {
+	return fmt.Sprintf("%s_%s", Prefix, str)
 }

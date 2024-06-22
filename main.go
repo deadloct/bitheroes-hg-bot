@@ -21,7 +21,10 @@ func init() {
 }
 
 func main() {
-	session, err := discordgo.New("Bot " + settings.AuthToken)
+	settings.LoadEnvFiles()
+	settings.LoadEmojis()
+
+	session, err := discordgo.New("Bot " + settings.GetenvStr("AUTH_TOKEN"))
 	if err != nil {
 		log.Panic(err)
 	}

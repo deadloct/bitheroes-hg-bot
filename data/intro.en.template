@@ -16,7 +16,7 @@ Rules for this contest:
 • You must be Tier {{.MinimumTier}} or higher to enter.
 {{- end}}
 {{- if gt .Clone 1}}
-• {{.CloneEmoji}} 𐌌𐌄Ᏽ𐌀 𐋅Ᏽ 𐌂𐌋Ꝋ𐌍𐌄 𐌌Ꝋ𐌃𐌄 𐌀𐌂𐌕𐌉ᕓ𐌀𐌕𐌄𐌃 x{{.Clone}} {{.CloneEmoji}}
+• {{.CloneEmoji}} ℂ𝕃𝕆ℕ𝔼 𝕄𝕆𝔻𝔼 𝔸ℂ𝕋𝕀𝕍𝔸𝕋𝔼𝔻 x{{.Clone}} {{.CloneEmoji}}
 {{- end}}
 ** **
 May the odds be ever in your favor!

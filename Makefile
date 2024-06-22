@@ -1,5 +1,5 @@
-ifneq ("$(wildcard .env)", "")
-	include .env
+ifneq ("$(wildcard .env.development.local)", "")
+	include .env.development.local
 endif
 
 NAME := bitheroes-hg-bot
@@ -17,6 +17,7 @@ bench:
 build: clean
 	go build -o $(LOCAL_PATH)/$(NAME)
 	cp -R data $(LOCAL_PATH)/
+	cp .env $(LOCAL_PATH)/.env
 
 run: build
 	$(LOCAL_PATH)/$(NAME)
@@ -24,6 +25,7 @@ run: build
 build_arm: clean
 	GOOS=linux GOARCH=arm64 GOARM=5 go build -o $(LOCAL_PATH)/$(NAME)
 	cp -R data $(LOCAL_PATH)
+	cp .env $(LOCAL_PATH)/.env
 
 deploy_arm: build_arm
 	rsync -avz $(LOCAL_PATH)/ $(SSH_HOST):$(SSH_DIR)
@@ -32,6 +34,7 @@ deploy_arm: build_arm
 build_amd64: clean
 	GOOS=linux GOARCH=amd64 go build -o $(LOCAL_PATH)/$(NAME)
 	cp -R data $(LOCAL_PATH)
+	cp .env $(LOCAL_PATH)/.env
 
 deploy_amd64: build_amd64
 	rsync -avz $(LOCAL_PATH)/ $(SSH_HOST):$(SSH_DIR)

@@ -1,11 +1,10 @@
 package settings
 
 import (
-	"io/ioutil"
-	"path"
 	"text/template"
 	"time"
 
+	"github.com/deadloct/bitheroes-hg-bot/data"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -25,11 +24,6 @@ const (
 	MinimumVictorCount = 0
 
 	JokeInterval = 10 * time.Second
-
-	PhrasesFile = "phrases.en.json"
-	JokesFile   = "jokes.en.json"
-	IntroFile   = "intro.en.template"
-	HelpFile    = "help.en.template"
 
 	MaxMsgLen            = 1500
 	DiscordMaxMessages   = 100
@@ -65,28 +59,16 @@ func ImportData() {
 }
 
 func importIntro() {
-	introPath := path.Join(DataLocation, IntroFile)
-	v, err := ioutil.ReadFile(introPath)
+	var err error
+	Intro, err = template.New("intro-template").Parse(data.IntroTemplate)
 	if err != nil {
-		log.Panicf("unable to open intro template file %v: %v", introPath, err)
-	}
-
-	tmplStr := string(v[:])
-	Intro, err = template.New("intro-template").Parse(tmplStr)
-	if err != nil {
-		log.Panicf("unable to parse intro template '%v': %v", tmplStr, err)
+		log.Panicf("unable to parse intro template '%v': %v", data.IntroTemplate, err)
 	}
 
 	log.Info("imported intro template")
 }
 
 func importHelp() {
-	helpPath := path.Join(DataLocation, HelpFile)
-	v, err := ioutil.ReadFile(helpPath)
-	if err != nil {
-		log.Panicf("unable to open help file %v: %v", helpPath, err)
-	}
-
-	Help = string(v[:])
+	Help = data.HelpTemplate
 	log.Info("imported help file")
 }

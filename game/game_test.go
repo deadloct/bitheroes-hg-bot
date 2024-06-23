@@ -18,7 +18,7 @@ import (
 func testSetupGameRun(f Fataler, userCount, multiplier int) (PhraseGenerator, []*discordgo.Member) {
 	f.Helper()
 	log.SetLevel(log.WarnLevel)
-	data, err := os.ReadFile(path.Join("..", settings.DataLocation, settings.PhrasesFile))
+	data, err := os.ReadFile(path.Join("..", settings.DataLocation, "phrases.en.json"))
 	if err != nil {
 		f.Fatal(err)
 	}

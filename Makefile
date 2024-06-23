@@ -16,7 +16,6 @@ bench:
 
 build: clean
 	go build -o $(LOCAL_PATH)/$(NAME)
-	cp -R data $(LOCAL_PATH)/
 	cp .env $(LOCAL_PATH)/.env
 
 run: build
@@ -24,7 +23,6 @@ run: build
 
 build_arm: clean
 	GOOS=linux GOARCH=arm64 GOARM=5 go build -o $(LOCAL_PATH)/$(NAME)
-	cp -R data $(LOCAL_PATH)
 	cp .env $(LOCAL_PATH)/.env
 
 deploy_arm: build_arm
@@ -33,7 +31,6 @@ deploy_arm: build_arm
 
 build_amd64: clean
 	GOOS=linux GOARCH=amd64 go build -o $(LOCAL_PATH)/$(NAME)
-	cp -R data $(LOCAL_PATH)
 	cp .env $(LOCAL_PATH)/.env
 
 deploy_amd64: build_amd64

@@ -2,7 +2,10 @@ package settings
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"path"
+	"path/filepath"
 	"strconv"
 
 	"github.com/joho/godotenv"
@@ -16,9 +19,9 @@ func LoadEnvFiles() {
 		env = "development"
 	}
 
-	godotenv.Load(".env." + env + ".local")
-	godotenv.Load(".env." + env)
-	godotenv.Load()
+	godotenv.Load(envPath(fmt.Sprintf(".env.%s.local", env)))
+	godotenv.Load(envPath(fmt.Sprintf(".env.%s", env)))
+	godotenv.Load(envPath(".env"))
 }
 
 func GetenvStr(key string) string {
@@ -55,4 +58,13 @@ func GetenvBool(key string) bool {
 
 func EnvKey(str string) string {
 	return fmt.Sprintf("%s_%s", Prefix, str)
+}
+
+func envPath(filename string) string {
+	p, err := os.Executable()
+	if err != nil {
+		log.Fatal(err)
+	}
+	p = filepath.Dir(p)
+	return path.Join(p, filename)
 }

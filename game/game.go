@@ -280,12 +280,23 @@ func (g *Game) run(ctx context.Context) []*Participant {
 	mentionStr := strings.Join(mentions, ", ")
 	snow := settings.GetEmoji(settings.EmojiPresSnow)
 	host := settings.GetEmoji(settings.EmojiCaesar)
+
+	// TODO: replace with a pluralizing library
+	winnerStr := "winner"
+	victorStr := "victor"
+	victorHasStr := "victor has"
+	if len(g.participants) > 1 {
+		winnerStr = "winners"
+		victorStr = "victors"
+		victorHasStr = "victors have"
+	}
+
 	lines := []string{
-		fmt.Sprintf("%v  This year's Hunger Games have concluded. Congratulations to our new victor(s): %v!", host.EmojiCode(), mentionStr),
+		fmt.Sprintf("%v  This year's Hunger Games have concluded. Congratulations to our new %v: %v!", host.EmojiCode(), victorStr, mentionStr),
 		settings.WhiteSpaceChar,
-		fmt.Sprintf("%v  The tributes demonstrated exceptional survival skills and the winner(s) emerged victorious. Their combat prowess is a testament to the superiority of the Capitol's training and preparation methods.", snow.EmojiCode()),
+		fmt.Sprintf("%v  The tributes all demonstrated exceptional survival skills but the %s emerged victorious. Their combat prowess is a testament to the superiority of the Capitol's training and preparation methods.", snow.EmojiCode(), winnerStr),
 		settings.WhiteSpaceChar,
-		fmt.Sprintf("The victor(s) have won **%s**!", g.Sponsor),
+		fmt.Sprintf("The %s won **%s**!", victorHasStr, g.Sponsor),
 	}
 
 	if g.Notify != nil {

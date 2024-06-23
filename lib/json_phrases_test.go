@@ -12,7 +12,7 @@ import (
 )
 
 func TestJSONPhrases_GetRandomPhrase_AllCompileAndExec(t *testing.T) {
-	data, err := os.ReadFile(path.Join("..", settings.DataLocation, settings.PhrasesFile))
+	data, err := os.ReadFile(path.Join("..", settings.DataLocation, "phrases.en.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,7 +35,7 @@ func TestJSONPhrases_GetRandomPhrase_AllCompileAndExec(t *testing.T) {
 }
 
 func TestJSONPhrases_GetRandomPhrase_AllThenReset(t *testing.T) {
-	data, err := os.ReadFile(path.Join("..", settings.DataLocation, settings.PhrasesFile))
+	data, err := os.ReadFile(path.Join("..", settings.DataLocation, "phrases.en.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

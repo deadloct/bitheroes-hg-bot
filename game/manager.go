@@ -2,6 +2,7 @@ package game
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -53,6 +54,10 @@ func ManagerInstance(session *discordgo.Session) *Manager {
 }
 
 func (m *Manager) StartGame(cfg GameStartConfig) error {
+	if cfg.Channel == nil {
+		return errors.New("no access to this channel")
+	}
+
 	sender := NewDiscordSender(m.session, cfg.Channel.ID)
 
 	if !m.CanStart(cfg.Channel.ID) {

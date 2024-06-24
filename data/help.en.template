@@ -5,9 +5,9 @@ __**/hg-start**__
 Starts a new Hunger Games event. There can only be one active game per Discord channel.
 
 Options:
-• `start-delay`: The number of **seconds** to wait for reactions until starting the game. Default: 900 (15 min), Minimum: 5, Maximum: 43200 (12 hours).
+• `start-delay-minutes`: Time to wait for reactions until starting the game. Default: 10, Minimum: 0.5, Maximum: 240 (4 hours).
 • `victors`: The number of winners. Default: 1, Minimum: 1, Maximum: anything, although it will be the number of people who enter.
-• `clone`: Clone each participant this many times. Disables mentions on deaths to prevent notification spam. Default: 1, Minimum: 1, Maximum: 10.
+• `clone`: Clone each participant this many times. Disables mentions on deaths to prevent notification spam. Default: 1, Minimum: 1, Maximum: 20.
 • `minimum-tier`: Request that only this tier or higher enter the contest. This only changes the intro text and doesn't actually forbid them from winning.
 • `sponsor`: If you're giving away a friend spot for another player, enter their name here. [param name change TBC]
 • `notify`: Choose a person to @ mention when the event ends.

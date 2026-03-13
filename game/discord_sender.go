@@ -153,7 +153,6 @@ func (s *DiscordSender) flush(str string) (*discordgo.Message, error) {
 		log.Tracef("successfully sent message of length %v", len(str))
 	}
 
-	err = errors.Join(err, s.sendBlankLine())
 	return msg, err
 }
 
@@ -168,17 +167,7 @@ func (s *DiscordSender) flushEmbed(str string) (*discordgo.Message, error) {
 		log.Tracef("successfully sent message of length %v", len(str))
 	}
 
-	err = errors.Join(err, s.sendBlankLine())
 	return msg, err
-}
-
-func (s *DiscordSender) sendBlankLine() error {
-	_, err := s.session.ChannelMessageSend(s.channelID, settings.WhiteSpaceChar)
-	if err != nil {
-		log.Errorf("error sending blank line: %v", err)
-	}
-
-	return err
 }
 
 func (s *DiscordSender) addBQ(str string) string {

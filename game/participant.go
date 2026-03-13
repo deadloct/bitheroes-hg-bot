@@ -25,6 +25,10 @@ func (p *Participant) DisplayName() string {
 		return p.Nick
 	}
 
+	if p.User.GlobalName != "" {
+		return p.User.GlobalName
+	}
+
 	return p.User.Username
 }
 
@@ -34,10 +38,12 @@ func (p *Participant) Mention() string {
 
 func (p *Participant) DisplayFullName() string {
 	displayName := p.User.Username
-
 	if p.Nick != "" {
 		displayName = p.Nick
 	}
 
+	if p.User.Discriminator == "" || p.User.Discriminator == "0" {
+		return fmt.Sprintf("%v (%v)", displayName, p.User.Username)
+	}
 	return fmt.Sprintf("%v (%v#%v)", displayName, p.User.Username, p.User.Discriminator)
 }
